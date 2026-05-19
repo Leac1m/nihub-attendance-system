@@ -3,15 +3,14 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   TouchableOpacity,
   FlatList,
   TextInput,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useAuth } from "@/contexts/AuthContext";
 
 const EVENTS = [
   {
@@ -106,14 +105,9 @@ const EventCard = ({ item, onPress }: { item: any; onPress: () => void }) => {
 
 export default function EventsScreen() {
   const router = useRouter();
-  const { signOut } = useAuth();
 
   const handleEventPress = (eventId: string) => {
     router.push(`/events/${eventId}/scan`);
-  };
-
-  const handleLogout = () => {
-    signOut();
   };
 
   return (

@@ -1,5 +1,6 @@
 {
   "expo": {
+    "jsEngine": "hermes",
     "name": "nihub-attendance-app",
     "slug": "nihub-attendance-app",
     "version": "1.0.0",

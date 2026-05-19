@@ -2,6 +2,7 @@ import os
 from datetime import date
 
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -22,6 +23,22 @@ from staff_auth import (
 )
 
 app = FastAPI()
+
+# Add CORS middleware to allow requests from mobile app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8081",  # Web
+        "http://localhost:8100",  # Web (alt)
+        "http://127.0.0.1:8081",
+        "http://10.0.2.2:8081",   # Android emulator (points to host)
+        "*",  # For development; restrict in production
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 service = CourseService()
 auth_service = StaffAuthService(secret_key=os.getenv("JWT_SECRET", "dev-secret-change-me"))
 

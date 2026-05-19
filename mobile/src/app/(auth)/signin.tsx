@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   TextInput,
   TouchableOpacity,
@@ -12,9 +11,9 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather as Icon } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginScreen() {
@@ -22,8 +21,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [secureText, setSecureText] = useState(true);
   const [error, setError] = useState("");
-  
-  const router = useRouter();
+
   const { signIn, isLoading } = useAuth();
 
   const handleSignIn = async () => {

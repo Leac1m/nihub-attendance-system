@@ -46,6 +46,12 @@
       "email": "alice.smith@example.com",
       "password": "password123",
       "username": "alice123"
+    },
+    {
+      "name": "Admin Smith",
+      "email": "admin@email.com",
+      "password": "admin123",
+      "username": "admin"
     }
   ]
 }
