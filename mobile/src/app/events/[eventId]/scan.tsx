@@ -74,9 +74,7 @@ export default function QRScannerScreen() {
 
         <View style={styles.avatar}>
           <Image
-            source={{
-              uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuA8zmGgA1iNQIIOCsyAYEM-NhQ0jNN_9YS7nTZuRmA5w-wc7_MeJO-fTC0tacn7LV1wbDaIshO2erlAuutAiCM_Nlr_k0W44viubdRy2IZBds2CB9luhoNQgZejPGR79mEgQcHp7CDLp1uvhoAMnqH2UHBidOhbPiLni1DFTjIooCOsfPXjbJHKa-O4OUZ2vK9zw6MxFQ_FXD2OiG9OUXuxANbAuNEfRmJJ0BYWgefJjpOEbzF95jL3nXw4ft9iTMNN4l9SCZTcl_s",
-            }}
+            source={require("@/assets/images/instructor-avatar.jpg")}
             style={styles.avatarImage}
           />
         </View>

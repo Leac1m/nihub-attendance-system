@@ -20,8 +20,7 @@ export default function AttendeeVerificationScreen() {
     email: "john.doe@example.com",
     phone: "0712 3456 789",
     matricNo: "123456789",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBxhgayLwVcUIwLjMgbuUEu27B_9yIlEA5zfjiGHV6oUOO9BvJ9ObZNbpne-dc7RLGGLTSzLGKQikaoM2AaRE_QlmLFYIlnE07o-VZHH-nkiJw3GUXUXFAW7kunxh8VbFzJb-XFeM4GH3ZGTKc7IBseScjINwRfUbuCU8gkefjDO_NYQD_c-wXgEfewXIKbJ9LeN3XXtrzbjD-Hr2djQzxRzbomeqtzoKeuNvG6EQNj97zogS4Xp_Z4WYHMEXdlw7cpf8VtAsJwrCA",
+    image: require("@/assets/images/attendee-john-doe.jpg"),
   };
 
   const handleAccept = () => {
@@ -59,7 +58,7 @@ export default function AttendeeVerificationScreen() {
         <View style={styles.card}>
           {/* Image */}
           <Image
-            source={{ uri: attendee.image }}
+            source={attendee.image}
             style={styles.profileImage}
             resizeMode="cover"
           />
