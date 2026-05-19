@@ -1,0 +1,6 @@
+# Ignore Python cache and environment files for server
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
