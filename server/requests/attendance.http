@@ -1,0 +1,86 @@
+@baseUrl = http://127.0.0.1:8000
+@courseCode = CS101
+@matricNumber = 987654321
+@today = 2026-05-18
+
+### Health Check
+# @name health
+GET {{baseUrl}}/health
+Accept: application/json
+
+### List Courses
+# @name listCourses
+GET {{baseUrl}}/courses
+Accept: application/json
+
+### Register Student In Course
+# @name registerStudent
+POST {{baseUrl}}/courses/{{courseCode}}/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "jane.doe@example.com",
+  "phone": "+1-555-999-1111",
+  "matriculation_number": "{{matricNumber}}"
+}
+
+### Staff Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+Accept: application/json
+
+username=alice123&password=password123
+
+### Capture JWT
+@authToken = {{login.response.body.access_token}}
+
+### List Registrants In Course
+# @name listRegistrants
+GET {{baseUrl}}/courses/{{courseCode}}/registrants
+Authorization: Bearer {{authToken}}
+Accept: application/json
+
+### Mark Attendance
+# @name markAttendance
+POST {{baseUrl}}/courses/{{courseCode}}/attendance/{{matricNumber}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "date": "{{today}}",
+  "present": true
+}
+
+### Duplicate Attendance Check
+# @name duplicateAttendance
+POST {{baseUrl}}/courses/{{courseCode}}/attendance/{{matricNumber}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "date": "{{today}}",
+  "present": true
+}
+
+### Invalid Course Registration
+# @name invalidCourse
+POST {{baseUrl}}/courses/INVALID101/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Bad Course User",
+  "email": "bad.course.user@example.com",
+  "phone": "+1-555-000-0000",
+  "matriculation_number": "111222333"
+}
+
+### Unauthorized Protected Route
+# @name unauthorizedRegistrants
+GET {{baseUrl}}/courses/{{courseCode}}/registrants
+Accept: application/json

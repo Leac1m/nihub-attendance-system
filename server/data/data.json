@@ -1,0 +1,51 @@
+{
+  "courses": [
+    {
+      "course_name": "Computer Science",
+      "course_code": "CS101",
+      "description": "A course that covers the fundamentals of computer science, including programming, algorithms, and data structures.",
+      "duration": "2 weeks",
+      "registrants": [
+        {
+          "name": "John Doe",
+          "email": "john.doe@example.com",
+          "phone": "+1-555-123-4567",
+          "matriculation_number": "123456789",
+          "attendance_days": [
+            {
+              "date": "2026-05-18",
+              "present": true
+            }
+          ]
+        },
+        {
+          "name": "Jane Doe",
+          "email": "jane.doe@example.com",
+          "phone": "+1-555-999-1111",
+          "matriculation_number": "987654321",
+          "attendance_days": [
+            {
+              "date": "2026-05-18",
+              "present": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "course_name": "Data Science",
+      "course_code": "DS101",
+      "description": "An introductory course on data science, covering data analysis, visualization, and machine learning.",
+      "duration": "2 weeks",
+      "registrants": []
+    }
+  ],
+  "staffs": [
+    {
+      "name": "Alice Smith",
+      "email": "alice.smith@example.com",
+      "password": "password123",
+      "username": "alice123"
+    }
+  ]
+}
