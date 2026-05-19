@@ -10,6 +10,8 @@ import {
   TextInput,
 } from "react-native";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useAuth } from "@/contexts/AuthContext";
 
 const EVENTS = [
   {
@@ -54,9 +56,9 @@ const EVENTS = [
   },
 ];
 
-const EventCard = ({ item }: any) => {
+const EventCard = ({ item, onPress }: { item: any; onPress: () => void }) => {
   return (
-    <TouchableOpacity activeOpacity={0.9} style={styles.card}>
+    <TouchableOpacity activeOpacity={0.9} style={styles.card} onPress={onPress}>
       {/* Decorative background */}
       <View
         style={[
@@ -103,6 +105,17 @@ const EventCard = ({ item }: any) => {
 };
 
 export default function EventsScreen() {
+  const router = useRouter();
+  const { signOut } = useAuth();
+
+  const handleEventPress = (eventId: string) => {
+    router.push(`/events/${eventId}/scan`);
+  };
+
+  const handleLogout = () => {
+    signOut();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
@@ -147,7 +160,12 @@ export default function EventsScreen() {
             </View>
           </>
         }
-        renderItem={({ item }) => <EventCard item={item} />}
+        renderItem={({ item }) => (
+          <EventCard
+            item={item}
+            onPress={() => handleEventPress(item.id)}
+          />
+        )}
         ItemSeparatorComponent={() => <View style={{ height: 18 }} />}
       />
     </SafeAreaView>

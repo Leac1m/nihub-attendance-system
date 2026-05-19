@@ -9,9 +9,12 @@ import {
   Image,
   ScrollView,
 } from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons";
+import { MaterialIcons as Icon } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 export default function AttendeeVerificationScreen() {
+  const router = useRouter();
+
   const attendee = {
     name: "John Doe",
     email: "john.doe@example.com",
@@ -19,6 +22,16 @@ export default function AttendeeVerificationScreen() {
     matricNo: "123456789",
     image:
       "https://lh3.googleusercontent.com/aida-public/AB6AXuBxhgayLwVcUIwLjMgbuUEu27B_9yIlEA5zfjiGHV6oUOO9BvJ9ObZNbpne-dc7RLGGLTSzLGKQikaoM2AaRE_QlmLFYIlnE07o-VZHH-nkiJw3GUXUXFAW7kunxh8VbFzJb-XFeM4GH3ZGTKc7IBseScjINwRfUbuCU8gkefjDO_NYQD_c-wXgEfewXIKbJ9LeN3XXtrzbjD-Hr2djQzxRzbomeqtzoKeuNvG6EQNj97zogS4Xp_Z4WYHMEXdlw7cpf8VtAsJwrCA",
+  };
+
+  const handleAccept = () => {
+    // Navigate back to events list
+    router.push("/events");
+  };
+
+  const handleDeny = () => {
+    // Go back to scanner
+    router.back();
   };
 
   return (
@@ -86,6 +99,7 @@ export default function AttendeeVerificationScreen() {
           <TouchableOpacity
             activeOpacity={0.9}
             style={styles.denyButton}
+            onPress={handleDeny}
           >
             <Icon name="cancel" size={20} color="#BA1A1A" />
 
@@ -95,6 +109,7 @@ export default function AttendeeVerificationScreen() {
           <TouchableOpacity
             activeOpacity={0.9}
             style={styles.acceptButton}
+            onPress={handleAccept}
           >
             <Icon name="check-circle" size={20} color="#FFFFFF" />
 
@@ -122,7 +137,7 @@ function InfoItem({
   return (
     <View style={styles.infoRow}>
       <Icon
-        name={icon}
+        name={icon as any}
         size={22}
         color="#827282"
         style={styles.infoIcon}

@@ -10,14 +10,36 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather as Icon } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [secureText, setSecureText] = useState(true);
+  const [error, setError] = useState("");
+  
+  const router = useRouter();
+  const { signIn, isLoading } = useAuth();
+
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      setError("Please enter email and password");
+      return;
+    }
+
+    try {
+      setError("");
+      await signIn(email, password);
+      // Navigation will happen automatically via the updated _layout.tsx
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign in failed");
+    }
+  };
 
   return (
     <LinearGradient
@@ -76,11 +98,15 @@ export default function LoginScreen() {
 
                   <TextInput
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(text) => {
+                      setEmail(text);
+                      setError("");
+                    }}
                     placeholder="Email Address"
                     placeholderTextColor="#A3A3A3"
                     keyboardType="email-address"
                     autoCapitalize="none"
+                    editable={!isLoading}
                     style={styles.input}
                   />
                 </View>
@@ -96,10 +122,14 @@ export default function LoginScreen() {
 
                   <TextInput
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      setError("");
+                    }}
                     placeholder="Password"
                     placeholderTextColor="#A3A3A3"
                     secureTextEntry={secureText}
+                    editable={!isLoading}
                     style={[styles.input, { paddingRight: 52 }]}
                   />
 
@@ -107,6 +137,7 @@ export default function LoginScreen() {
                     activeOpacity={0.7}
                     style={styles.eyeButton}
                     onPress={() => setSecureText(!secureText)}
+                    disabled={isLoading}
                   >
                     <Icon
                       name={secureText ? "eye" : "eye-off"}
@@ -116,12 +147,26 @@ export default function LoginScreen() {
                   </TouchableOpacity>
                 </View>
 
+                {/* Error Message */}
+                {error ? (
+                  <Text style={styles.errorText}>{error}</Text>
+                ) : null}
+
                 {/* Sign In Button */}
                 <TouchableOpacity
                   activeOpacity={0.9}
-                  style={styles.signInButton}
+                  style={[
+                    styles.signInButton,
+                    isLoading && styles.signInButtonDisabled,
+                  ]}
+                  onPress={handleSignIn}
+                  disabled={isLoading}
                 >
-                  <Text style={styles.signInText}>Sign In</Text>
+                  {isLoading ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.signInText}>Sign In</Text>
+                  )}
                 </TouchableOpacity>
               </View>
 
@@ -273,6 +318,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  errorText: {
+    color: "#BA1A1A",
+    fontSize: 13,
+    marginBottom: 12,
+    fontWeight: "600",
+  },
+
   signInButton: {
     height: 58,
     borderRadius: 20,
@@ -291,6 +343,10 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 
+  signInButtonDisabled: {
+    opacity: 0.7,
+  },
+
   signInText: {
     color: "#FFFFFF",
     fontSize: 16,
@@ -306,7 +362,7 @@ const styles = StyleSheet.create({
   },
 
   footerText: {
-    fontSize: 15,
+    fontSize: 12,
     color: "#737373",
   },
 

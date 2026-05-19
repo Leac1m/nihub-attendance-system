@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -6,300 +6,340 @@ import {
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
+  Animated,
+  Dimensions,
   Image,
-  ScrollView,
 } from "react-native";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
+import { useRouter, useLocalSearchParams } from "expo-router";
 
-export default function AttendeeVerificationScreen() {
-  const attendee = {
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "0712 3456 789",
-    matricNo: "123456789",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBxhgayLwVcUIwLjMgbuUEu27B_9yIlEA5zfjiGHV6oUOO9BvJ9ObZNbpne-dc7RLGGLTSzLGKQikaoM2AaRE_QlmLFYIlnE07o-VZHH-nkiJw3GUXUXFAW7kunxh8VbFzJb-XFeM4GH3ZGTKc7IBseScjINwRfUbuCU8gkefjDO_NYQD_c-wXgEfewXIKbJ9LeN3XXtrzbjD-Hr2djQzxRzbomeqtzoKeuNvG6EQNj97zogS4Xp_Z4WYHMEXdlw7cpf8VtAsJwrCA",
+const { width } = Dimensions.get("window");
+const SCANNER_SIZE = width * 0.72;
+
+export default function QRScannerScreen() {
+  const scanAnimation = useRef(new Animated.Value(0)).current;
+  const router = useRouter();
+  const { eventId } = useLocalSearchParams();
+
+  useEffect(() => {
+    const startAnimation = () => {
+      scanAnimation.setValue(0);
+
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(scanAnimation, {
+            toValue: SCANNER_SIZE - 20,
+            duration: 2200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scanAnimation, {
+            toValue: 0,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+
+    startAnimation();
+  }, []);
+
+  const handleScanSuccess = () => {
+    // Navigate to success screen
+    router.push({
+      pathname: "/events/[eventId]/scan-success",
+      params: { eventId: eventId as string },
+    } as any);
+  };
+
+  const handleBack = () => {
+    router.back();
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
+      <StatusBar barStyle="light-content" backgroundColor="#2E3132" />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.iconWrapper}>
-            <Icon name="qr-code-scanner" size={28} color="#F7BCFF" />
-          </View>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.backButton}
+          onPress={handleBack}
+        >
+          <Icon name="arrow-back" size={24} color="#504251" />
+        </TouchableOpacity>
 
-          <Text style={styles.title}>Scan Successful</Text>
+        <Text style={styles.headerTitle}>Computer Science</Text>
 
-          <Text style={styles.subtitle}>
-            Review attendee details below.
+        <View style={styles.avatar}>
+          <Image
+            source={{
+              uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuA8zmGgA1iNQIIOCsyAYEM-NhQ0jNN_9YS7nTZuRmA5w-wc7_MeJO-fTC0tacn7LV1wbDaIshO2erlAuutAiCM_Nlr_k0W44viubdRy2IZBds2CB9luhoNQgZejPGR79mEgQcHp7CDLp1uvhoAMnqH2UHBidOhbPiLni1DFTjIooCOsfPXjbJHKa-O4OUZ2vK9zw6MxFQ_FXD2OiG9OUXuxANbAuNEfRmJJ0BYWgefJjpOEbzF95jL3nXw4ft9iTMNN4l9SCZTcl_s",
+            }}
+            style={styles.avatarImage}
+          />
+        </View>
+      </View>
+
+      {/* Scanner Area */}
+      <View style={styles.scannerContainer}>
+        {/* Fake Camera Background */}
+        <View style={styles.cameraBackground} />
+
+        {/* Scanner Box */}
+        <View style={styles.scannerWrapper}>
+          {/* Corners */}
+          <View style={[styles.corner, styles.topLeft]} />
+          <View style={[styles.corner, styles.topRight]} />
+          <View style={[styles.corner, styles.bottomLeft]} />
+          <View style={[styles.corner, styles.bottomRight]} />
+
+          {/* Center Icon */}
+          <Icon
+            name="qr-code-scanner"
+            size={52}
+            color="rgba(255,255,255,0.18)"
+          />
+
+          {/* Scan Line */}
+          <Animated.View
+            style={[
+              styles.scanLine,
+              {
+                transform: [{ translateY: scanAnimation }],
+              },
+            ]}
+          />
+        </View>
+
+        {/* Flash Button */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={styles.flashButton}
+        >
+          <Icon name="flashlight-on" size={28} color="#FFFFFF" />
+        </TouchableOpacity>
+
+        {/* Instructions */}
+        <View style={styles.instructionsContainer}>
+          <Text style={styles.instructions}>
+            Position the QR code within the frame to scan your
+            attendance.
           </Text>
         </View>
 
-        {/* Attendee Card */}
-        <View style={styles.card}>
-          {/* Image */}
-          <Image
-            source={{ uri: attendee.image }}
-            style={styles.profileImage}
-            resizeMode="cover"
-          />
-
-          {/* Name */}
-          <Text style={styles.name}>{attendee.name}</Text>
-
-          {/* Details */}
-          <View style={styles.infoContainer}>
-            <InfoItem
-              icon="mail"
-              label="Email"
-              value={attendee.email}
-            />
-
-            <View style={styles.divider} />
-
-            <InfoItem
-              icon="phone-iphone"
-              label="Phone No"
-              value={attendee.phone}
-            />
-
-            <View style={styles.divider} />
-
-            <InfoItem
-              icon="badge"
-              label="Matric No"
-              value={attendee.matricNo}
-              bold
-            />
-          </View>
-        </View>
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          <TouchableOpacity
-            activeOpacity={0.9}
-            style={styles.denyButton}
-          >
-            <Icon name="cancel" size={20} color="#BA1A1A" />
-
-            <Text style={styles.denyButtonText}>Deny</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.9}
-            style={styles.acceptButton}
-          >
-            <Icon name="check-circle" size={20} color="#FFFFFF" />
-
-            <Text style={styles.acceptButtonText}>Accept</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+        {/* Simulate Scan Button (for demo) */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.simulateScanButton}
+          onPress={handleScanSuccess}
+        >
+          <Icon name="check" size={20} color="#FFFFFF" />
+          <Text style={styles.simulateScanText}>Simulate Scan</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
 
-type InfoItemProps = {
-  icon: string;
-  label: string;
-  value: string;
-  bold?: boolean;
-};
-
-function InfoItem({
-  icon,
-  label,
-  value,
-  bold = false,
-}: InfoItemProps) {
-  return (
-    <View style={styles.infoRow}>
-      <Icon
-        name={icon}
-        size={22}
-        color="#827282"
-        style={styles.infoIcon}
-      />
-
-      <View style={{ flex: 1 }}>
-        <Text style={styles.infoLabel}>{label}</Text>
-
-        <Text
-          style={[
-            styles.infoValue,
-            bold && { fontWeight: "700" },
-          ]}
-        >
-          {value}
-        </Text>
-      </View>
-    </View>
-  );
-}
+const CORNER_SIZE = 34;
+const BORDER_WIDTH = 5;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
-  },
-
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 32,
+    backgroundColor: "#2E3132",
   },
 
   header: {
+    height: 72,
+    backgroundColor: "#F8F9FA",
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 32,
-  },
-
-  iconWrapper: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#8E24AA",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 18,
-  },
-
-  title: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: "#191C1D",
-    marginBottom: 8,
-    letterSpacing: -0.5,
-  },
-
-  subtitle: {
-    fontSize: 15,
-    color: "#504251",
-    textAlign: "center",
-    lineHeight: 22,
-  },
-
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 28,
-    padding: 24,
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
 
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 10,
+      height: 6,
     },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 5,
-
-    marginBottom: 28,
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 4,
   },
 
-  profileImage: {
-    width: "100%",
-    aspectRatio: 1,
-    borderRadius: 20,
-    marginBottom: 24,
-  },
-
-  name: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#191C1D",
-    marginBottom: 24,
-  },
-
-  infoContainer: {
-    width: "100%",
-  },
-
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 6,
-  },
-
-  infoIcon: {
-    marginRight: 14,
-  },
-
-  infoLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#827282",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-
-  infoValue: {
-    fontSize: 16,
-    color: "#191C1D",
-    lineHeight: 24,
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: "#E7E8E9",
-    marginVertical: 14,
-  },
-
-  actions: {
-    flexDirection: "row",
-    gap: 14,
-  },
-
-  denyButton: {
-    flex: 1,
-    height: 56,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#BA1A1A",
-    backgroundColor: "#FFFFFF",
-
-    flexDirection: "row",
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     justifyContent: "center",
     alignItems: "center",
   },
 
-  denyButtonText: {
-    marginLeft: 8,
-    color: "#BA1A1A",
-    fontSize: 15,
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 22,
     fontWeight: "700",
+    color: "#70008B",
+    marginHorizontal: 10,
   },
 
-  acceptButton: {
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#D3C1D2",
+    backgroundColor: "#E1E3E4",
+  },
+
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+  },
+
+  scannerContainer: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    overflow: "hidden",
+  },
+
+  cameraBackground: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#111827",
+  },
+
+  scannerWrapper: {
+    width: SCANNER_SIZE,
+    height: SCANNER_SIZE,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+    marginBottom: 42,
+  },
+
+  corner: {
+    position: "absolute",
+    width: CORNER_SIZE,
+    height: CORNER_SIZE,
+    borderColor: "#8E24AA",
+  },
+
+  topLeft: {
+    top: 0,
+    left: 0,
+    borderTopWidth: BORDER_WIDTH,
+    borderLeftWidth: BORDER_WIDTH,
+    borderTopLeftRadius: 18,
+  },
+
+  topRight: {
+    top: 0,
+    right: 0,
+    borderTopWidth: BORDER_WIDTH,
+    borderRightWidth: BORDER_WIDTH,
+    borderTopRightRadius: 18,
+  },
+
+  bottomLeft: {
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: BORDER_WIDTH,
+    borderLeftWidth: BORDER_WIDTH,
+    borderBottomLeftRadius: 18,
+  },
+
+  bottomRight: {
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: BORDER_WIDTH,
+    borderRightWidth: BORDER_WIDTH,
+    borderBottomRightRadius: 18,
+  },
+
+  scanLine: {
+    position: "absolute",
+    top: 0,
+    left: 12,
+    right: 12,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: "#8E24AA",
+
+    shadowColor: "#8E24AA",
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.9,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
+  flashButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 6,
+
+    marginBottom: 36,
+  },
+
+  instructionsContainer: {
+    paddingHorizontal: 24,
+  },
+
+  instructions: {
+    textAlign: "center",
+    fontSize: 16,
+    lineHeight: 26,
+    color: "rgba(255,255,255,0.9)",
+  },
+
+  simulateScanButton: {
+    position: "absolute",
+    bottom: 24,
+    left: 20,
+    right: 20,
     height: 56,
     borderRadius: 16,
     backgroundColor: "#70008B",
-
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
+    gap: 8,
 
     shadowColor: "#70008B",
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: 8,
     },
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 6,
   },
 
-  acceptButtonText: {
-    marginLeft: 8,
+  simulateScanText: {
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "700",
