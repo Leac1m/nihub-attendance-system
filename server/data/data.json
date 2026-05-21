@@ -7,6 +7,7 @@
       "duration": "2 weeks",
       "registrants": [
         {
+          "id": "ATT-001",
           "name": "John Doe",
           "email": "john.doe@example.com",
           "phone": "+1-555-123-4567",
@@ -19,6 +20,7 @@
           ]
         },
         {
+          "id": "ATT-002",
           "name": "Jane Doe",
           "email": "jane.doe@example.com",
           "phone": "+1-555-999-1111",

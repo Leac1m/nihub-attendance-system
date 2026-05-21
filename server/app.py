@@ -108,6 +108,33 @@ async def get_course_registrants(
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@app.get("/courses/{course_code}/registrants/{registrant_id}")
+async def get_course_registrant(
+    course_code: str,
+    registrant_id: str,
+    staff: StaffPublic = Depends(get_current_staff),
+):
+    try:
+        return {
+            "code": course_code,
+            "registrant": service.get_registrant(course_code, registrant_id),
+        }
+    except CourseNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RegistrantNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/courses/{course_code}/scan-context")
+async def get_course_scan_context(course_code: str):
+    try:
+        return service.get_scan_context(course_code)
+    except CourseNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RegistrantNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @app.post("/courses/{course_code}/register")
 async def register_for_course(course_code: str, registrant: RegistrantCreate):
     try:

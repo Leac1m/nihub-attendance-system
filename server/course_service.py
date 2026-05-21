@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from typing import Any
+from uuid import uuid4
 
 from db import load_data, save_data
 
@@ -49,7 +50,44 @@ class CourseService:
     def get_registrants(self, course_code: str) -> list[dict[str, Any]]:
         data = self.load_data()
         course = self._find_course(data, course_code)
-        return course.get("registrants", [])
+        return [self._normalize_registrant(registrant) for registrant in course.get("registrants", [])]
+
+    def get_registrant(self, course_code: str, registrant_id: str) -> dict[str, Any]:
+        data = self.load_data()
+        course = self._find_course(data, course_code)
+        course.setdefault("registrants", [])
+
+        registrant = next(
+            (
+                self._normalize_registrant(item)
+                for item in course["registrants"]
+                if self._normalize_registrant(item).get("id") == registrant_id
+                or self._normalize_registrant(item).get("matriculation_number") == registrant_id
+            ),
+            None,
+        )
+        if not registrant:
+            raise RegistrantNotFoundError("Registrant not found in this course")
+
+        return registrant
+
+    def get_scan_context(self, course_code: str) -> dict[str, Any]:
+        data = self.load_data()
+        course = self._find_course(data, course_code)
+        registrants = [self._normalize_registrant(item) for item in course.get("registrants", [])]
+
+        if not registrants:
+            raise RegistrantNotFoundError("No registrants found in this course")
+
+        return {
+            "course": {
+                "name": course.get("name") or course.get("course_name") or "",
+                "code": course.get("code") or course.get("course_code") or "",
+                "description": course.get("description", ""),
+                "duration": course.get("duration", ""),
+            },
+            "attendee": registrants[0],
+        }
 
     def register(self, course_code: str, registrant: dict[str, Any]) -> dict[str, Any]:
         data = self.load_data()
@@ -67,7 +105,11 @@ class CourseService:
         if exists:
             raise RegistrantExistsError("Registrant already in this course")
 
-        new_registrant = {**registrant, "attendance_days": []}
+        new_registrant = {
+            "id": f"ATT-{uuid4().hex[:8].upper()}",
+            **registrant,
+            "attendance_days": [],
+        }
         course["registrants"].append(new_registrant)
         self.save_data(data)
         return new_registrant
@@ -118,3 +160,13 @@ class CourseService:
         if not course:
             raise CourseNotFoundError("Course not found")
         return course
+
+    def _normalize_registrant(self, registrant: dict[str, Any]) -> dict[str, Any]:
+        normalized = dict(registrant)
+        matriculation_number = normalized.get("matriculation_number")
+        if not normalized.get("id"):
+            if matriculation_number:
+                normalized["id"] = f"ATT-{matriculation_number}"
+            else:
+                normalized["id"] = f"ATT-{uuid4().hex[:8].upper()}"
+        return normalized

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,22 +6,54 @@ import {
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
-  Image,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { getRegistrant, Registrant } from "@/services/authAPI";
 
 export default function AttendeeVerificationScreen() {
   const router = useRouter();
+  const { eventId, attendeeId } = useLocalSearchParams();
+  const [attendee, setAttendee] = useState<Registrant | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const attendee = {
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "0712 3456 789",
-    matricNo: "123456789",
-    image: require("@/assets/images/attendee-john-doe.jpg"),
-  };
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAttendee = async () => {
+      if (!eventId || !attendeeId || Array.isArray(eventId) || Array.isArray(attendeeId)) {
+        setError("Missing attendee reference");
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      const result = await getRegistrant(eventId, attendeeId);
+      if (!result.success || !result.data?.registrant) {
+        if (isMounted) {
+          setError(result.error || "Failed to load attendee details");
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      if (isMounted) {
+        setAttendee(result.data.registrant);
+        setIsLoading(false);
+      }
+    };
+
+    loadAttendee();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [attendeeId, eventId]);
 
   const handleAccept = () => {
     // Navigate back to events list
@@ -56,41 +88,58 @@ export default function AttendeeVerificationScreen() {
 
         {/* Attendee Card */}
         <View style={styles.card}>
-          {/* Image */}
-          <Image
-            source={attendee.image}
-            style={styles.profileImage}
-            resizeMode="cover"
-          />
+          {isLoading ? (
+            <View style={styles.loadingState}>
+              <ActivityIndicator size="large" color="#70008B" />
+              <Text style={styles.loadingText}>Loading attendee details</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.loadingState}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : attendee ? (
+            <>
+              {/* Image */}
+              <View style={styles.avatarFallback}>
+                <Text style={styles.avatarFallbackText}>
+                  {attendee.name
+                    .split(" ")
+                    .map((part) => part[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </Text>
+              </View>
 
-          {/* Name */}
-          <Text style={styles.name}>{attendee.name}</Text>
+              {/* ID */}
+              <Text style={styles.attendeeId}>ID: {attendee.id}</Text>
 
-          {/* Details */}
-          <View style={styles.infoContainer}>
-            <InfoItem
-              icon="mail"
-              label="Email"
-              value={attendee.email}
-            />
+              {/* Name */}
+              <Text style={styles.name}>{attendee.name}</Text>
 
-            <View style={styles.divider} />
+              {/* Details */}
+              <View style={styles.infoContainer}>
+                <InfoItem icon="mail" label="Email" value={attendee.email} />
 
-            <InfoItem
-              icon="phone-iphone"
-              label="Phone No"
-              value={attendee.phone}
-            />
+                <View style={styles.divider} />
 
-            <View style={styles.divider} />
+                <InfoItem
+                  icon="phone-iphone"
+                  label="Phone No"
+                  value={attendee.phone}
+                />
 
-            <InfoItem
-              icon="badge"
-              label="Matric No"
-              value={attendee.matricNo}
-              bold
-            />
-          </View>
+                <View style={styles.divider} />
+
+                <InfoItem
+                  icon="badge"
+                  label="Matric No"
+                  value={attendee.matriculation_number}
+                  bold
+                />
+              </View>
+            </>
+          ) : null}
         </View>
 
         {/* Actions */}
@@ -107,8 +156,12 @@ export default function AttendeeVerificationScreen() {
 
           <TouchableOpacity
             activeOpacity={0.9}
-            style={styles.acceptButton}
+            style={[
+              styles.acceptButton,
+              (isLoading || !!error || !attendee) && styles.acceptButtonDisabled,
+            ]}
             onPress={handleAccept}
+            disabled={isLoading || !!error || !attendee}
           >
             <Icon name="check-circle" size={20} color="#FFFFFF" />
 
@@ -218,6 +271,51 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
 
+  loadingState: {
+    minHeight: 260,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#504251",
+  },
+
+  errorText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#BA1A1A",
+    textAlign: "center",
+  },
+
+  avatarFallback: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 20,
+    marginBottom: 24,
+    backgroundColor: "#F2E6F7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  avatarFallbackText: {
+    fontSize: 48,
+    fontWeight: "800",
+    color: "#70008B",
+  },
+
+  attendeeId: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#827282",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+
   profileImage: {
     width: "100%",
     aspectRatio: 1,
@@ -310,6 +408,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.22,
     shadowRadius: 12,
     elevation: 5,
+  },
+
+  acceptButtonDisabled: {
+    opacity: 0.45,
   },
 
   acceptButtonText: {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,11 @@ import {
 } from "react-native";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import {
+  getScanContext,
+  Course,
+  Registrant,
+} from "@/services/authAPI";
 
 const { width } = Dimensions.get("window");
 const SCANNER_SIZE = width * 0.72;
@@ -20,6 +25,10 @@ export default function QRScannerScreen() {
   const scanAnimation = useRef(new Animated.Value(0)).current;
   const router = useRouter();
   const { eventId } = useLocalSearchParams();
+  const [course, setCourse] = useState<Course | null>(null);
+  const [registrants, setRegistrants] = useState<Registrant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const startAnimation = () => {
@@ -44,11 +53,58 @@ export default function QRScannerScreen() {
     startAnimation();
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadScanContext = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      if (!eventId || Array.isArray(eventId)) {
+        if (isMounted) {
+          setError("Course not found");
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      const result = await getScanContext(eventId);
+      if (!result.success || !result.data) {
+        if (isMounted) {
+          setError(result.error || "Failed to load scan context");
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      if (isMounted) {
+        setCourse(result.data.course);
+        setRegistrants([result.data.attendee]);
+        setIsLoading(false);
+      }
+    };
+
+    loadScanContext();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [eventId]);
+
+  const currentAttendee = useMemo(() => registrants[0] ?? null, [registrants]);
+
   const handleScanSuccess = () => {
+    if (!currentAttendee) {
+      return;
+    }
+
     // Navigate to success screen
     router.push({
       pathname: "/events/[eventId]/scan-success",
-      params: { eventId: eventId as string },
+      params: {
+        eventId: eventId as string,
+        attendeeId: currentAttendee.id,
+      },
     } as any);
   };
 
@@ -70,7 +126,15 @@ export default function QRScannerScreen() {
           <Icon name="arrow-back" size={24} color="#504251" />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Computer Science</Text>
+        <View style={styles.headerTextBlock}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {course?.name || "Event Scanner"}
+          </Text>
+
+          <Text style={styles.headerSubtitle} numberOfLines={1}>
+            {course?.code || eventId}
+          </Text>
+        </View>
 
         <View style={styles.avatar}>
           <Image
@@ -111,6 +175,19 @@ export default function QRScannerScreen() {
           />
         </View>
 
+        <View style={styles.attendeeIdChip}>
+          <Text style={styles.attendeeIdLabel}>Scanned attendee ID</Text>
+          <Text style={styles.attendeeIdValue}>
+            {isLoading
+              ? "Loading..."
+              : error
+                ? "Unavailable"
+                : currentAttendee?.id || "No attendee found"}
+          </Text>
+        </View>
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
         {/* Flash Button */}
         <TouchableOpacity
           activeOpacity={0.9}
@@ -130,8 +207,12 @@ export default function QRScannerScreen() {
         {/* Simulate Scan Button (for demo) */}
         <TouchableOpacity
           activeOpacity={0.8}
-          style={styles.simulateScanButton}
+          style={[
+            styles.simulateScanButton,
+            (!currentAttendee || isLoading) && styles.simulateScanButtonDisabled,
+          ]}
           onPress={handleScanSuccess}
+          disabled={!currentAttendee || isLoading}
         >
           <Icon name="check" size={20} color="#FFFFFF" />
           <Text style={styles.simulateScanText}>Simulate Scan</Text>
@@ -168,6 +249,12 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
+  headerTextBlock: {
+    flex: 1,
+    alignItems: "center",
+    paddingHorizontal: 10,
+  },
+
   backButton: {
     width: 42,
     height: 42,
@@ -177,12 +264,17 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    flex: 1,
-    textAlign: "center",
     fontSize: 22,
     fontWeight: "700",
     color: "#70008B",
-    marginHorizontal: 10,
+  },
+
+  headerSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: "600",
+    letterSpacing: 1.2,
+    color: "#827282",
   },
 
   avatar: {
@@ -220,6 +312,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     position: "relative",
     marginBottom: 42,
+  },
+
+  attendeeIdChip: {
+    minWidth: 220,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    marginBottom: 18,
+  },
+
+  attendeeIdLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.65)",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+
+  attendeeIdValue: {
+    fontSize: 18,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    color: "#FFFFFF",
+  },
+
+  errorText: {
+    marginBottom: 12,
+    color: "#FFB4B4",
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
   },
 
   corner: {
@@ -335,6 +463,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 16,
     elevation: 6,
+  },
+
+  simulateScanButtonDisabled: {
+    opacity: 0.45,
   },
 
   simulateScanText: {

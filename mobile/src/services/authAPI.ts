@@ -30,11 +30,27 @@ export interface RegistrantsResponse {
 }
 
 export interface Registrant {
+  id: string;
   name: string;
   email: string;
   phone: string;
   matriculation_number: string;
   [key: string]: any;
+}
+
+export interface RegistrantResponse {
+  code: string;
+  registrant: Registrant;
+}
+
+export interface ScanCourseContext {
+  course: Course;
+  attendee: Registrant;
+}
+
+export interface ScanContextResponse {
+  course: Course;
+  attendee: Registrant;
 }
 
 /**
@@ -108,6 +124,34 @@ export async function getRegistrants(
       requiresAuth: true,
     }
   );
+}
+
+/**
+ * Get a specific registrant for a course by attendee ID or matriculation number
+ */
+export async function getRegistrant(
+  courseCode: string,
+  registrantId: string
+): Promise<ApiResponse<RegistrantResponse>> {
+  return apiRequest<RegistrantResponse>(
+    API_ENDPOINTS.GET_REGISTRANT(courseCode, registrantId),
+    {
+      method: "GET",
+      requiresAuth: true,
+    }
+  );
+}
+
+/**
+ * Get the course and the attendee to use for scanner demo flow.
+ */
+export async function getScanContext(
+  courseCode: string
+): Promise<ApiResponse<ScanContextResponse>> {
+  return apiRequest<ScanContextResponse>(API_ENDPOINTS.GET_SCAN_CONTEXT(courseCode), {
+    method: "GET",
+    requiresAuth: false,
+  });
 }
 
 /**

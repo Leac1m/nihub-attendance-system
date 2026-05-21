@@ -23,6 +23,10 @@ export const API_ENDPOINTS = {
   GET_COURSES: "/courses",
   GET_REGISTRANTS: (courseCode: string) =>
     `/courses/${courseCode}/registrants`,
+  GET_REGISTRANT: (courseCode: string, registrantId: string) =>
+    `/courses/${courseCode}/registrants/${registrantId}`,
+  GET_SCAN_CONTEXT: (courseCode: string) =>
+    `/courses/${courseCode}/scan-context`,
   REGISTER_COURSE: (courseCode: string) =>
     `/courses/${courseCode}/register`,
   MARK_ATTENDANCE: (courseCode: string, matricNumber: string) =>
