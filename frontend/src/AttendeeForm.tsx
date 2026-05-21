@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import './AttendeeForm.css';
+import { registerAttendee } from './services/attendeeAPI';
 
 interface AttendeeFormData {
   name: string;
@@ -9,7 +10,12 @@ interface AttendeeFormData {
   photo?: Blob;
 }
 
-export function AttendeeForm() {
+interface AttendeeFormProps {
+  courseCode?: string;
+  onSuccess?: (registrantId: string) => void;
+}
+
+export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [formData, setFormData] = useState<AttendeeFormData>({
     name: '',
@@ -19,6 +25,9 @@ export function AttendeeForm() {
   });
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -122,37 +131,77 @@ export function AttendeeForm() {
       return;
     }
 
+    setIsLoading(true);
+    setSubmitError(null);
+
     try {
-      const payload = {
+      const response = await registerAttendee(courseCode, {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         matriculation_number: formData.matriculationNumber,
-        photo: photoPreview,
-      };
-
-      console.log('Submitting attendee data:', payload);
-      alert('Attendee registered successfully!');
-      
-      // Reset form
-      setStep(1);
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        matriculationNumber: '',
       });
-      setPhotoPreview(null);
-      setErrors({});
+
+      setSuccessMessage(
+        `Welcome ${formData.name}! You have been registered successfully. Your ID is ${response.registrant.id}`
+      );
+
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        setStep(1);
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          matriculationNumber: '',
+        });
+        setPhotoPreview(null);
+        setErrors({});
+        setSuccessMessage(null);
+
+        if (onSuccess) {
+          onSuccess(response.registrant.id);
+        }
+      }, 3000);
     } catch (error) {
-      console.error('Error submitting form:', error);
-      alert('Failed to register attendee');
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to register attendee';
+      setSubmitError(errorMessage);
+      console.error('Registration error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="attendee-form-container">
       <div className="attendee-form-card">
+        {/* Success Message */}
+        {successMessage && (
+          <div className="alert alert-success">
+            <div className="alert-icon">✓</div>
+            <div className="alert-content">
+              <p>{successMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {submitError && (
+          <div className="alert alert-error">
+            <div className="alert-icon">✕</div>
+            <div className="alert-content">
+              <p>{submitError}</p>
+              <button
+                className="alert-dismiss"
+                onClick={() => setSubmitError(null)}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="attendee-form-header">
           <div className="attendee-form-step-indicator">
@@ -239,7 +288,7 @@ export function AttendeeForm() {
               )}
             </div>
 
-            <button className="btn btn-primary" onClick={handleNext}>
+            <button className="btn btn-primary" onClick={handleNext} disabled={isLoading}>
               Continue to Photo
             </button>
           </div>
@@ -279,13 +328,13 @@ export function AttendeeForm() {
 
                 <div className="photo-buttons">
                   <button className="btn btn-secondary" onClick={handleCameraCapture}>
-                    📷 Capture from Camera
+                    Capture from Camera
                   </button>
                   <button
                     className="btn btn-secondary"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    📁 Upload Photo
+                    Upload Photo
                   </button>
                   <input
                     ref={fileInputRef}
@@ -307,15 +356,15 @@ export function AttendeeForm() {
             {errors.photo && <span className="form-error">{errors.photo}</span>}
 
             <div className="form-actions">
-              <button className="btn btn-secondary" onClick={() => setStep(1)}>
+              <button className="btn btn-secondary" onClick={() => setStep(1)} disabled={isLoading}>
                 Back
               </button>
               <button
                 className="btn btn-primary"
                 onClick={handleSubmit}
-                disabled={!photoPreview}
+                disabled={!photoPreview || isLoading}
               >
-                Complete Registration
+                {isLoading ? 'Registering...' : 'Complete Registration'}
               </button>
             </div>
           </div>

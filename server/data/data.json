@@ -31,6 +31,22 @@
               "present": true
             }
           ]
+        },
+        {
+          "id": "ATT-D8580417",
+          "name": "Sarah Johnson",
+          "email": "sarah.johnson@university.edu",
+          "phone": "+234 807 555 1234",
+          "matriculation_number": "202156789",
+          "attendance_days": []
+        },
+        {
+          "id": "ATT-0C922F41",
+          "name": "test data",
+          "email": "data@email.com",
+          "phone": "124465509",
+          "matriculation_number": "567890",
+          "attendance_days": []
         }
       ]
     },
