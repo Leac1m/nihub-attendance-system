@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -7,55 +7,44 @@ import {
   TouchableOpacity,
   FlatList,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { Course, getCourses } from "@/services/authAPI";
 
-const EVENTS = [
-  {
-    id: "1",
-    title: "Computer Science",
-    code: "CS101",
-    description:
-      "A course that covers the fundamentals of computer science, including programming, algorithms, and data structures.",
-    duration: "2 weeks",
-    accent: "#70008B",
-    bg: "#F7E6FB",
-  },
-  {
-    id: "2",
-    title: "Data Science",
-    code: "DS201",
-    description:
-      "Learn to extract insights from complex data sets using statistical analysis and machine learning techniques.",
-    duration: "4 weeks",
-    accent: "#0059BB",
-    bg: "#E4EEFF",
-  },
-  {
-    id: "3",
-    title: "Cyber Security",
-    code: "SEC101",
-    description:
-      "Protect systems and networks from digital attacks, focusing on threat analysis and secure architecture.",
-    duration: "3 weeks",
-    accent: "#BA1A1A",
-    bg: "#FFE4E1",
-  },
-  {
-    id: "4",
-    title: "UI/UX Design",
-    code: "UX301",
-    description:
-      "Master the principles of user interface design and craft compelling user experiences for modern applications.",
-    duration: "4 weeks",
-    accent: "#705D07",
-    bg: "#FFF4CC",
-  },
+type EventUi = {
+  id: string;
+  title: string;
+  code: string;
+  description: string;
+  duration: string;
+  accent: string;
+  bg: string;
+};
+
+const EVENT_STYLES = [
+  { accent: "#70008B", bg: "#F7E6FB" },
+  { accent: "#0059BB", bg: "#E4EEFF" },
+  { accent: "#BA1A1A", bg: "#FFE4E1" },
+  { accent: "#705D07", bg: "#FFF4CC" },
 ];
 
-const EventCard = ({ item, onPress }: { item: any; onPress: () => void }) => {
+function mapCourseToEvent(course: Course, index: number): EventUi {
+  const fallbackStyle = EVENT_STYLES[index % EVENT_STYLES.length];
+  return {
+    id: course.code,
+    title: course.name,
+    code: course.code,
+    description: course.description,
+    duration: course.duration,
+    accent: fallbackStyle.accent,
+    bg: fallbackStyle.bg,
+  };
+}
+
+const EventCard = ({ item, onPress }: { item: EventUi; onPress: () => void }) => {
   return (
     <TouchableOpacity activeOpacity={0.9} style={styles.card} onPress={onPress}>
       {/* Decorative background */}
@@ -105,10 +94,50 @@ const EventCard = ({ item, onPress }: { item: any; onPress: () => void }) => {
 
 export default function EventsScreen() {
   const router = useRouter();
+  const [events, setEvents] = useState<EventUi[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadCourses = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    const result = await getCourses();
+    if (!result.success || !result.data?.courses) {
+      setError(result.error || "Failed to load events");
+      setEvents([]);
+      setIsLoading(false);
+      return;
+    }
+
+    const mapped = result.data.courses.map(mapCourseToEvent);
+    setEvents(mapped);
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
 
   const handleEventPress = (eventId: string) => {
     router.push(`/events/${eventId}/scan`);
   };
+
+  const filteredEvents = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) {
+      return events;
+    }
+
+    return events.filter((event) => {
+      return (
+        event.title.toLowerCase().includes(query) ||
+        event.code.toLowerCase().includes(query) ||
+        event.description.toLowerCase().includes(query)
+      );
+    });
+  }, [events, searchTerm]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -128,7 +157,7 @@ export default function EventsScreen() {
       </View>
 
       <FlatList
-        data={EVENTS}
+        data={filteredEvents}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -147,11 +176,23 @@ export default function EventsScreen() {
               />
 
               <TextInput
+                value={searchTerm}
+                onChangeText={setSearchTerm}
                 placeholder="Search events..."
                 placeholderTextColor="#827282"
                 style={styles.searchInput}
               />
+
+              {isLoading ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#827282"
+                  style={styles.searchLoader}
+                />
+              ) : null}
             </View>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
           </>
         }
         renderItem={({ item }) => (
@@ -160,6 +201,15 @@ export default function EventsScreen() {
             onPress={() => handleEventPress(item.id)}
           />
         )}
+        ListEmptyComponent={
+          !isLoading ? (
+            <Text style={styles.emptyText}>
+              {searchTerm ? "No events match your search" : "No events found"}
+            </Text>
+          ) : null
+        }
+        onRefresh={loadCourses}
+        refreshing={isLoading}
         ItemSeparatorComponent={() => <View style={{ height: 18 }} />}
       />
     </SafeAreaView>
@@ -254,6 +304,25 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: "#191C1D",
+  },
+
+  searchLoader: {
+    marginLeft: 8,
+  },
+
+  errorText: {
+    marginBottom: 12,
+    color: "#BA1A1A",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  emptyText: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+    marginTop: 20,
+    marginBottom: 8,
   },
 
   card: {

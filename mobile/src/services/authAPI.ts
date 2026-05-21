@@ -19,11 +19,13 @@ export interface CourseResponse {
 export interface Course {
   code: string;
   name: string;
+  description: string;
+  duration: string;
   [key: string]: any;
 }
 
 export interface RegistrantsResponse {
-  course_code: string;
+  code: string;
   registrants: Registrant[];
 }
 

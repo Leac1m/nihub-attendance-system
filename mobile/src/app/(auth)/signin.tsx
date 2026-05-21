@@ -14,9 +14,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather as Icon } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [secureText, setSecureText] = useState(true);
@@ -33,7 +35,7 @@ export default function LoginScreen() {
     try {
       setError("");
       await signIn(email, password);
-      // Navigation will happen automatically via the updated _layout.tsx
+      router.replace("/events");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed");
     }

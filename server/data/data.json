@@ -1,8 +1,8 @@
 {
   "courses": [
     {
-      "course_name": "Computer Science",
-      "course_code": "CS101",
+      "name": "Computer Science",
+      "code": "CS101",
       "description": "A course that covers the fundamentals of computer science, including programming, algorithms, and data structures.",
       "duration": "2 weeks",
       "registrants": [
@@ -33,10 +33,24 @@
       ]
     },
     {
-      "course_name": "Data Science",
-      "course_code": "DS101",
-      "description": "An introductory course on data science, covering data analysis, visualization, and machine learning.",
-      "duration": "2 weeks",
+      "name": "Data Science",
+      "code": "DS201",
+      "description": "Learn to extract insights from complex data sets using statistical analysis and machine learning techniques.",
+      "duration": "4 weeks",
+      "registrants": []
+    },
+    {
+      "name": "Cyber Security",
+      "code": "SEC101",
+      "description": "Protect systems and networks from digital attacks, focusing on threat analysis and secure architecture.",
+      "duration": "3 weeks",
+      "registrants": []
+    },
+    {
+      "name": "UI/UX Design",
+      "code": "UX301",
+      "description": "Master the principles of user interface design and craft compelling user experiences for modern applications.",
+      "duration": "4 weeks",
       "registrants": []
     }
   ],

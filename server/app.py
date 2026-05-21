@@ -101,7 +101,7 @@ async def get_course_registrants(
 ):
     try:
         return {
-            "course_code": course_code,
+            "code": course_code,
             "registrants": service.get_registrants(course_code),
         }
     except CourseNotFoundError as e:

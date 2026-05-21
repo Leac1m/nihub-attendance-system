@@ -20,6 +20,8 @@ class RegistrantNotFoundError(Exception):
 
 class AttendanceAlreadyMarkedError(Exception):
     pass
+
+
 class CourseService:
     def load_data(self) -> dict[str, Any]:
         return load_data()
@@ -28,7 +30,21 @@ class CourseService:
         save_data(data)
 
     def list_courses(self) -> list[dict[str, Any]]:
-        return self.load_data()["courses"]
+        courses = self.load_data()["courses"]
+        normalized: list[dict[str, Any]] = []
+
+        for course in courses:
+            normalized.append(
+                {
+                    "name": course.get("name") or course.get("course_name") or "",
+                    "code": course.get("code") or course.get("course_code") or "",
+                    "description": course.get("description", ""),
+                    "duration": course.get("duration", ""),
+                    "registrants": course.get("registrants", []),
+                }
+            )
+
+        return normalized
 
     def get_registrants(self, course_code: str) -> list[dict[str, Any]]:
         data = self.load_data()
@@ -92,7 +108,11 @@ class CourseService:
 
     def _find_course(self, data: dict[str, Any], course_code: str) -> dict[str, Any]:
         course = next(
-            (c for c in data["courses"] if c.get("course_code") == course_code),
+            (
+                c
+                for c in data["courses"]
+                if c.get("code") == course_code or c.get("course_code") == course_code
+            ),
             None,
         )
         if not course:
