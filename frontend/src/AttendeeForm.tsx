@@ -26,6 +26,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
     matriculationNumber: '',
   });
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -120,6 +121,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
       reader.onload = (event) => {
         const result = event.target?.result as string;
         setPhotoPreview(result);
+        setPhotoFile(file);
         setFormData((prev) => ({
           ...prev,
           photo: file,
@@ -153,6 +155,16 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
         const imageUrl = canvasRef.current.toDataURL('image/jpeg');
         setPhotoPreview(imageUrl);
         
+        // Convert canvas to blob and create File object
+        canvasRef.current.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], `photo-${Date.now()}.jpg`, {
+              type: 'image/jpeg',
+            });
+            setPhotoFile(file);
+          }
+        }, 'image/jpeg');
+        
         // Stop the video stream
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach((track) => track.stop());
@@ -171,12 +183,16 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
     setSubmitError(null);
 
     try {
-      const response = await registerAttendee(selectedCourseCode, {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        matriculation_number: formData.matriculationNumber,
-      });
+      const response = await registerAttendee(
+        selectedCourseCode,
+        {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          matriculation_number: formData.matriculationNumber,
+        },
+        photoFile || undefined
+      );
 
       setSuccessMessage(
         `Welcome ${formData.name}! You have been registered successfully. Your ID is ${response.registrant.id}`
@@ -192,6 +208,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
           matriculationNumber: '',
         });
         setPhotoPreview(null);
+        setPhotoFile(null);
         setErrors({});
         setSuccessMessage(null);
 

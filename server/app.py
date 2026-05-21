@@ -1,8 +1,11 @@
 import os
 from datetime import date
+from pathlib import Path
+from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -24,6 +27,10 @@ from staff_auth import (
 
 app = FastAPI()
 
+# Create uploads directory if it doesn't exist
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
 # Add CORS middleware to allow requests from mobile app
 app.add_middleware(
     CORSMiddleware,
@@ -38,6 +45,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve uploaded files as static files
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 service = CourseService()
 auth_service = StaffAuthService(secret_key=os.getenv("JWT_SECRET", "dev-secret-change-me"))
@@ -147,9 +157,39 @@ async def get_course_scan_context(course_code: str):
 
 
 @app.post("/courses/{course_code}/register")
-async def register_for_course(course_code: str, registrant: RegistrantCreate):
+async def register_for_course(
+    course_code: str,
+    name: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(...),
+    matriculation_number: str = Form(...),
+    image: UploadFile | None = File(None),
+):
     try:
-        created = service.register(course_code, registrant.model_dump())
+        image_filename = None
+        
+        # Save uploaded image if provided
+        if image:
+            # Generate unique filename
+            file_extension = Path(image.filename).suffix if image.filename else ".jpg"
+            image_filename = f"{uuid4().hex}{file_extension}"
+            
+            # Save file to uploads directory
+            file_path = UPLOAD_DIR / image_filename
+            content = await image.read()
+            with open(file_path, "wb") as f:
+                f.write(content)
+        
+        # Register the attendee
+        registrant_data = {
+            "name": name,
+            "email": email,
+            "phone": phone,
+            "matriculation_number": matriculation_number,
+            "image_url": f"/uploads/{image_filename}" if image_filename else None,
+        }
+        
+        created = service.register(course_code, registrant_data)
         return {"message": "Registration saved", "registrant": created}
     except CourseNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

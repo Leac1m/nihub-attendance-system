@@ -9,9 +9,11 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
+import { Image } from "react-native";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { getRegistrant, Registrant } from "@/services/authAPI";
+import { API_BASE_URL } from "@/config/api";
 
 export default function AttendeeVerificationScreen() {
   const router = useRouter();
@@ -99,17 +101,24 @@ export default function AttendeeVerificationScreen() {
             </View>
           ) : attendee ? (
             <>
-              {/* Image */}
-              <View style={styles.avatarFallback}>
-                <Text style={styles.avatarFallbackText}>
-                  {attendee.name
-                    .split(" ")
-                    .map((part) => part[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </Text>
-              </View>
+                {/* Image */}
+                {attendee.image_url ? (
+                  <Image
+                    source={{ uri: `${API_BASE_URL}${attendee.image_url}` }}
+                    style={styles.profileImage}
+                  />
+                ) : (
+                  <View style={styles.avatarFallback}>
+                    <Text style={styles.avatarFallbackText}>
+                      {attendee.name
+                        .split(" ")
+                        .map((part) => part[0])
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </Text>
+                  </View>
+                )}
 
               {/* ID */}
               <Text style={styles.attendeeId}>ID: {attendee.id}</Text>

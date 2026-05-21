@@ -32,16 +32,24 @@ export interface RegistrationResponse {
  */
 export async function registerAttendee(
   courseCode: string,
-  data: RegistrantData
+  data: RegistrantData,
+  imageFile?: File
 ): Promise<RegistrationResponse> {
+  const formData = new FormData();
+  formData.append('name', data.name);
+  formData.append('email', data.email);
+  formData.append('phone', data.phone);
+  formData.append('matriculation_number', data.matriculation_number);
+  
+  if (imageFile) {
+    formData.append('image', imageFile);
+  }
+
   const response = await fetch(
     `${API_BASE_URL}/courses/${courseCode}/register`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
+      body: formData,
     }
   );
 

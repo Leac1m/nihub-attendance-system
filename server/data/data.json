@@ -12,6 +12,7 @@
           "email": "john.doe@example.com",
           "phone": "+1-555-123-4567",
           "matriculation_number": "123456789",
+          "image_url": null,
           "attendance_days": [
             {
               "date": "2026-05-18",
@@ -25,6 +26,7 @@
           "email": "jane.doe@example.com",
           "phone": "+1-555-999-1111",
           "matriculation_number": "987654321",
+          "image_url": null,
           "attendance_days": [
             {
               "date": "2026-05-18",
@@ -38,6 +40,7 @@
           "email": "sarah.johnson@university.edu",
           "phone": "+234 807 555 1234",
           "matriculation_number": "202156789",
+          "image_url": null,
           "attendance_days": []
         },
         {
@@ -46,6 +49,34 @@
           "email": "data@email.com",
           "phone": "124465509",
           "matriculation_number": "567890",
+          "image_url": null,
+          "attendance_days": []
+        },
+        {
+          "id": "ATT-AB252CD7",
+          "name": "Michael",
+          "email": "test1@email.com",
+          "phone": "23455899",
+          "matriculation_number": "4534555",
+          "image_url": null,
+          "attendance_days": []
+        },
+        {
+          "id": "ATT-B07E967E",
+          "name": "test data",
+          "email": "test@email.com",
+          "phone": "3234662344",
+          "matriculation_number": "M124455",
+          "image_url": null,
+          "attendance_days": []
+        },
+        {
+          "id": "ATT-1342BF56",
+          "name": "Michael",
+          "email": "testing@email.com",
+          "phone": "234567896543",
+          "matriculation_number": "76543224",
+          "image_url": "/uploads/cc23d8be58854b2c95b456b686b060ca.png",
           "attendance_days": []
         }
       ]
