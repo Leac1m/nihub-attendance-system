@@ -10,6 +10,7 @@ import {
   Dimensions,
   Image,
 } from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
@@ -25,10 +26,12 @@ export default function QRScannerScreen() {
   const scanAnimation = useRef(new Animated.Value(0)).current;
   const router = useRouter();
   const { eventId } = useLocalSearchParams();
+  const [permission, requestPermission] = useCameraPermissions();
   const [course, setCourse] = useState<Course | null>(null);
   const [registrants, setRegistrants] = useState<Registrant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasScanned, setHasScanned] = useState(false);
 
   useEffect(() => {
     const startAnimation = () => {
@@ -93,6 +96,26 @@ export default function QRScannerScreen() {
 
   const currentAttendee = useMemo(() => registrants[0] ?? null, [registrants]);
 
+  useEffect(() => {
+    setHasScanned(false);
+  }, [eventId]);
+
+  const handleBarcodeScanned = ({ type, data }: { type: string; data: string }) => {
+    if (hasScanned || type !== "qr") {
+      return;
+    }
+
+    setHasScanned(true);
+
+    router.push({
+      pathname: "/events/[eventId]/scan-success",
+      params: {
+        eventId: eventId as string,
+        attendeeId: data,
+      },
+    } as any);
+  };
+
   const handleScanSuccess = () => {
     if (!currentAttendee) {
       return;
@@ -146,8 +169,35 @@ export default function QRScannerScreen() {
 
       {/* Scanner Area */}
       <View style={styles.scannerContainer}>
-        {/* Fake Camera Background */}
-        <View style={styles.cameraBackground} />
+        {permission?.granted ? (
+          <CameraView
+            style={styles.cameraBackground}
+            facing="back"
+            onBarcodeScanned={hasScanned ? undefined : handleBarcodeScanned}
+            barcodeScannerSettings={{
+              barcodeTypes: ["qr"],
+            }}
+          />
+        ) : (
+          <View style={styles.cameraBackground}>
+            <View style={styles.permissionOverlay}>
+              <Icon name="photo-camera" size={42} color="#FFFFFF" />
+              <Text style={styles.permissionTitle}>Camera access needed</Text>
+              <Text style={styles.permissionText}>
+                Grant permission to scan attendee QR codes.
+              </Text>
+              {!permission ? null : (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.permissionButton}
+                  onPress={requestPermission}
+                >
+                  <Text style={styles.permissionButtonText}>Allow Camera</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Scanner Box */}
         <View style={styles.scannerWrapper}>
@@ -209,10 +259,11 @@ export default function QRScannerScreen() {
           activeOpacity={0.8}
           style={[
             styles.simulateScanButton,
-            (!currentAttendee || isLoading) && styles.simulateScanButtonDisabled,
+            (!currentAttendee || isLoading || !permission?.granted) &&
+              styles.simulateScanButtonDisabled,
           ]}
           onPress={handleScanSuccess}
-          disabled={!currentAttendee || isLoading}
+          disabled={!currentAttendee || isLoading || !permission?.granted}
         >
           <Icon name="check" size={20} color="#FFFFFF" />
           <Text style={styles.simulateScanText}>Simulate Scan</Text>
@@ -303,6 +354,47 @@ const styles = StyleSheet.create({
   cameraBackground: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "#111827",
+  },
+
+  permissionOverlay: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28,
+    backgroundColor: "rgba(17,24,39,0.72)",
+  },
+
+  permissionTitle: {
+    marginTop: 14,
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    textAlign: "center",
+  },
+
+  permissionText: {
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 22,
+    color: "rgba(255,255,255,0.82)",
+    textAlign: "center",
+  },
+
+  permissionButton: {
+    marginTop: 18,
+    minWidth: 160,
+    height: 48,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    backgroundColor: "#70008B",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  permissionButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
 
   scannerWrapper: {
