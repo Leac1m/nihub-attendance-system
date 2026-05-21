@@ -31,3 +31,4 @@ qr_codes/
 uploads/
 
 .kilo/
+.env

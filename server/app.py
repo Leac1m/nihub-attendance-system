@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import date
 from pathlib import Path
@@ -17,6 +18,7 @@ from course_service import (
     RegistrantNotFoundError,
 )
 
+from email_service import email_service
 from staff_auth import (
     StaffAuthService,
     StaffPublic,
@@ -199,6 +201,17 @@ async def register_for_course(
         }
         
         created = service.register(course_code, registrant_data)
+
+        # Fire-and-forget: send registration email with QR code
+        try:
+            email_service.send_registration_email(created, created["id"])
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                "Failed to send registration email to %s: %s",
+                created.get("email"),
+                exc,
+            )
+
         return {"message": "Registration saved", "registrant": created}
     except CourseNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
