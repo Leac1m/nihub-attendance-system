@@ -7,6 +7,11 @@ export interface RegistrantData {
   matriculation_number: string;
 }
 
+export interface CourseOption {
+  name: string;
+  code: string;
+}
+
 export interface RegistrationResponse {
   message: string;
   registrant: {
@@ -56,5 +61,7 @@ export async function getCourses() {
   if (!response.ok) {
     throw new Error('Failed to fetch courses');
   }
-  return response.json();
+
+  const data: { courses?: CourseOption[] } = await response.json();
+  return data.courses ?? [];
 }

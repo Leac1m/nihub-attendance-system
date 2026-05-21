@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './AttendeeForm.css';
-import { registerAttendee } from './services/attendeeAPI';
+import { getCourses, registerAttendee, type CourseOption } from './services/attendeeAPI';
 
 interface AttendeeFormData {
   name: string;
@@ -17,6 +17,8 @@ interface AttendeeFormProps {
 
 export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormProps) {
   const [step, setStep] = useState<1 | 2>(1);
+  const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [selectedCourseCode, setSelectedCourseCode] = useState(courseCode);
   const [formData, setFormData] = useState<AttendeeFormData>({
     name: '',
     email: '',
@@ -31,6 +33,36 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCourses = async () => {
+      try {
+        const courseList = await getCourses();
+        if (!isMounted) {
+          return;
+        }
+
+        setCourses(courseList);
+
+        if (
+          courseList.length > 0 &&
+          !courseList.some((course) => course.code === selectedCourseCode)
+        ) {
+          setSelectedCourseCode(courseList[0].code);
+        }
+      } catch (error) {
+        console.error('Error loading courses:', error);
+      }
+    };
+
+    loadCourses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const validateStep1 = () => {
     const newErrors: Record<string, string> = {};
@@ -69,6 +101,10 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
         [name]: '',
       }));
     }
+  };
+
+  const handleCourseChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCourseCode(e.target.value);
   };
 
   const handleNext = () => {
@@ -135,7 +171,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
     setSubmitError(null);
 
     try {
-      const response = await registerAttendee(courseCode, {
+      const response = await registerAttendee(selectedCourseCode, {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
@@ -222,6 +258,30 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
         {/* Step 1: Details */}
         {step === 1 && (
           <div className="attendee-form-content">
+            <div className="form-group">
+              <label htmlFor="courseCode" className="form-label">
+                Course
+              </label>
+              <select
+                id="courseCode"
+                name="courseCode"
+                value={selectedCourseCode}
+                onChange={handleCourseChange}
+                className="form-input"
+                disabled={courses.length === 0}
+              >
+                {courses.length === 0 ? (
+                  <option value={selectedCourseCode}>Loading courses...</option>
+                ) : (
+                  courses.map((course) => (
+                    <option key={course.code} value={course.code}>
+                      {course.name} ({course.code})
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
             <div className="form-group">
               <label htmlFor="name" className="form-label">
                 Full Name

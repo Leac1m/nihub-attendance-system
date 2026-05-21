@@ -91,7 +91,18 @@ async def health():
 
 @app.get("/courses")
 async def get_courses():
-    return {"courses": service.list_courses()}
+    courses = service.list_courses()
+    return {
+        "courses": [
+            {
+                "name": course.get("name") or course.get("course_name") or "",
+                "code": course.get("code") or course.get("course_code") or "",
+                "description": course.get("description", ""),
+                "duration": course.get("duration", ""),
+            }
+            for course in courses
+        ]
+    }
 
 
 @app.get("/courses/{course_code}/registrants")
