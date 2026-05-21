@@ -1,0 +1,25 @@
+# builder
+FROM node:24-alpine AS builder
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+
+RUN npm install
+
+COPY . .
+
+# Allow injecting API host at build time (Vite reads VITE_API_URL at build)
+ARG VITE_API_URL=http://localhost:8000
+ENV VITE_API_URL=${VITE_API_URL}
+
+# RUN npm ci --silent
+
+RUN npm run build
+
+# runtime
+FROM docker.io/nginxinc/nginx-unprivileged:alpine
+
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
