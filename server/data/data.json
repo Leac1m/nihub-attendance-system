@@ -78,6 +78,15 @@
           "matriculation_number": "76543224",
           "image_url": "/uploads/cc23d8be58854b2c95b456b686b060ca.png",
           "attendance_days": []
+        },
+        {
+          "id": "ATT-0D229E53",
+          "name": "test_te",
+          "email": "test123@email.com",
+          "phone": "123432343",
+          "matriculation_number": "1232432",
+          "image_url": "/uploads/58bc7227e35a4de08adf1c026cc5af31.png",
+          "attendance_days": []
         }
       ]
     },

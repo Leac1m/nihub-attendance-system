@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+import qrcode
 from db import load_data, save_data
 
 
@@ -112,6 +114,10 @@ class CourseService:
         }
         course["registrants"].append(new_registrant)
         self.save_data(data)
+
+        qr_path = self._generate_qr_code(new_registrant["id"])
+        new_registrant["qr_code_url"] = f"/qr_codes/{Path(qr_path).name}"
+
         return new_registrant
 
     def mark_attendance(
@@ -160,6 +166,13 @@ class CourseService:
         if not course:
             raise CourseNotFoundError("Course not found")
         return course
+
+    def _generate_qr_code(self, registrant_id: str) -> str:
+        qr_dir = Path(__file__).parent / "qr_codes"
+        qr_dir.mkdir(exist_ok=True)
+        qr_path = qr_dir / f"{registrant_id}.png"
+        qrcode.make(registrant_id).save(str(qr_path))
+        return str(qr_path)
 
     def _normalize_registrant(self, registrant: dict[str, Any]) -> dict[str, Any]:
         normalized = dict(registrant)

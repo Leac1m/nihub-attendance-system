@@ -31,6 +31,10 @@ app = FastAPI()
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+# Create qr_codes directory if it doesn't exist
+QR_DIR = Path("qr_codes")
+QR_DIR.mkdir(exist_ok=True)
+
 # Add CORS middleware to allow requests from mobile app
 app.add_middleware(
     CORSMiddleware,
@@ -48,6 +52,9 @@ app.add_middleware(
 
 # Serve uploaded files as static files
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+# Serve QR code images as static files
+app.mount("/qr_codes", StaticFiles(directory="qr_codes"), name="qr_codes")
 
 service = CourseService()
 auth_service = StaffAuthService(secret_key=os.getenv("JWT_SECRET", "dev-secret-change-me"))

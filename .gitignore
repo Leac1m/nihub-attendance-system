@@ -26,3 +26,8 @@ dist/
 .vscode/
 .idea/
 .DS_Store
+
+qr_codes/
+uploads/
+
+.kilo/
