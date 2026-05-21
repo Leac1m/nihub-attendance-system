@@ -43,6 +43,8 @@ app.add_middleware(
         "http://localhost:8100",  # Web (alt)
         "http://127.0.0.1:8081",
         "http://10.0.2.2:8081",   # Android emulator (points to host)
+        "http://10.1.1.240:8081", # Expo LAN host IP + dev server port
+        "http://10.1.1.240:8000", # Expo LAN host IP + API port
         "*",  # For development; restrict in production
     ],
     allow_credentials=True,

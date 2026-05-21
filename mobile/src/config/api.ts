@@ -1,15 +1,26 @@
 import { Platform } from "react-native";
+import * as Device from "expo-device";
 
 /**
  * Get the API base URL based on the current platform.
  * Android emulator uses 10.0.2.2 to reach localhost:8000
- * iOS and web use localhost:8000
+ * iOS simulator and web use localhost:8000
+ * Physical Android / iOS devices on the same LAN use the host machine IP
  */
 export function getApiBaseUrl(): string {
   if (Platform.OS === "android") {
+    // 10.0.2.2 only works inside the Android emulator
+    if (Device.isDevice) {
+      // Physical Android phone: reach the host on the LAN
+      return "http://10.1.1.240:8000";
+    }
     return "http://10.0.2.2:8000";
   }
-  // iOS and web
+  if (Platform.OS === "ios") {
+    // Physical iOS device → use host LAN IP; simulator → localhost
+    return Device.isDevice ? "http://10.1.1.240:8000" : "http://localhost:8000";
+  }
+  // Web
   return "http://localhost:8000";
 }
 
