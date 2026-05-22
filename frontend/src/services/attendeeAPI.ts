@@ -1,5 +1,3 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
 export interface RegistrantData {
   name: string;
   email: string;
@@ -20,6 +18,7 @@ export interface RegistrationResponse {
     email: string;
     phone: string;
     matriculation_number: string;
+    qr_code_url: string;
     attendance_days?: Array<{
       date: string;
       present: boolean;
@@ -40,13 +39,13 @@ export async function registerAttendee(
   formData.append('email', data.email);
   formData.append('phone', data.phone);
   formData.append('matriculation_number', data.matriculation_number);
-  
+
   if (imageFile) {
     formData.append('image', imageFile);
   }
 
   const response = await fetch(
-    `${API_BASE_URL}/courses/${courseCode}/register`,
+    `/api/courses/${courseCode}/register`,
     {
       method: 'POST',
       body: formData,
@@ -65,7 +64,7 @@ export async function registerAttendee(
  * Get list of courses
  */
 export async function getCourses() {
-  const response = await fetch(`${API_BASE_URL}/courses`);
+  const response = await fetch('/api/courses');
   if (!response.ok) {
     throw new Error('Failed to fetch courses');
   }
