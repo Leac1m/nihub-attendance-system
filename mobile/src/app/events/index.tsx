@@ -8,11 +8,12 @@ import {
   FlatList,
   TextInput,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Course, getCourses } from "@/services/authAPI";
+import { Course, getCourses, downloadCourseAttendanceSpreadsheet } from "@/services/authAPI";
 
 type EventUi = {
   id: string;
@@ -44,7 +45,11 @@ function mapCourseToEvent(course: Course, index: number): EventUi {
   };
 }
 
-const EventCard = ({ item, onPress }: { item: EventUi; onPress: () => void }) => {
+const EventCard = ({ item, onPress, onDownload }: {
+  item: EventUi;
+  onPress: () => void;
+  onDownload: () => void;
+}) => {
   return (
     <TouchableOpacity activeOpacity={0.9} style={styles.card} onPress={onPress}>
       {/* Decorative background */}
@@ -85,8 +90,23 @@ const EventCard = ({ item, onPress }: { item: EventUi; onPress: () => void }) =>
       <Text style={styles.description}>{item.description}</Text>
 
       <View style={styles.footer}>
-        <Icon name="schedule" size={18} color="#6B7280" />
-        <Text style={styles.duration}>{item.duration}</Text>
+        <View style={styles.footerMeta}>
+          <Icon name="schedule" size={18} color="#6B7280" />
+          <Text style={styles.duration}>{item.duration}</Text>
+        </View>
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={styles.downloadButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            onDownload();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Download attendee spreadsheet"
+        >
+          <Icon name="file-download" size={20} color="#70008B" />
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -123,6 +143,16 @@ export default function EventsScreen() {
   const handleEventPress = (eventId: string) => {
     router.push(`/events/${eventId}/scan`);
   };
+
+  const handleDownloadAttendanceSheet = useCallback(async (courseCode: string) => {
+    const result = await downloadCourseAttendanceSpreadsheet(courseCode);
+    if (!result.success) {
+      Alert.alert(
+        "Download failed",
+        result.error ?? "Could not download the attendance sheet. Please try again.",
+      );
+    }
+  }, []);
 
   const filteredEvents = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -199,6 +229,7 @@ export default function EventsScreen() {
           <EventCard
             item={item}
             onPress={() => handleEventPress(item.id)}
+            onDownload={() => handleDownloadAttendanceSheet(item.id)}
           />
         )}
         ListEmptyComponent={
@@ -393,6 +424,12 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  footerMeta: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   duration: {
@@ -400,5 +437,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: "#6B7280",
+  },
+
+  downloadButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

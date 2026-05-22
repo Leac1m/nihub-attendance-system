@@ -1,5 +1,6 @@
 import logging
 import os
+import io
 from datetime import date
 from pathlib import Path
 from uuid import uuid4
@@ -7,6 +8,7 @@ from uuid import uuid4
 from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, EmailStr
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -240,6 +242,55 @@ async def mark_attendance(
         raise HTTPException(status_code=404, detail=str(e))
     except AttendanceAlreadyMarkedError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/courses/{course_code}/attendance/spreadsheet")
+async def get_attendance_spreadsheet(
+    course_code: str,
+    staff: StaffPublic = Depends(get_current_staff),
+):
+    try:
+        data = service.get_attendance_spreadsheet(course_code)
+
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Attendance"
+
+        base_headers = ["ID", "Name", "Email", "Phone", "Matric No"]
+        date_headers = sorted(
+            [k for k in data[0].keys() if k not in base_headers],
+        ) if data else []
+        all_headers = base_headers + date_headers
+        ws.append(all_headers)
+
+        def _day_attended(row: dict, col: str) -> int | str:
+            val = row.get(col)
+            if val == "":
+                return ""
+            return 1 if val else 0
+
+        for row in data:
+            ws.append([row.get(h) if h in base_headers else _day_attended(row, h)
+                        for h in all_headers])
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        return StreamingResponse(
+            buf,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f'attachment; filename="{course_code}_attendance.xlsx"',
+            },
+        )
+    except CourseNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RegistrantNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
 
 
 @app.post("/auth/login", response_model=LoginResponse)

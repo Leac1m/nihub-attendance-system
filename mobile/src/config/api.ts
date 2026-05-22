@@ -42,6 +42,8 @@ export const API_ENDPOINTS = {
     `/courses/${courseCode}/register`,
   MARK_ATTENDANCE: (courseCode: string, matricNumber: string) =>
     `/courses/${courseCode}/attendance/${matricNumber}`,
+  DOWNLOAD_ATTENDANCE_SPREADSHEET: (courseCode: string) =>
+    `/courses/${courseCode}/attendance/spreadsheet`,
 };
 
 export const API_CONFIG = {

@@ -178,3 +178,45 @@ class CourseService:
         qr_path = qr_dir / f"{registrant_id}.png"
         qrcode.make(registrant_id).save(str(qr_path))
         return str(qr_path)
+
+    def get_attendance_spreadsheet(self, course_code: str) -> list[dict[str, Any]]:
+        with self._get_connection() as conn:
+            with conn.cursor() as cur:
+                self._verify_course(cur, course_code)
+
+                cur.execute(
+                    """SELECT r.id, r.name, r.email, r.phone, r.matriculation_number,
+                              a.date, a.present
+                       FROM registrants r
+                       LEFT JOIN attendance a ON a.registrant_id = r.id
+                       WHERE r.course_code = %s
+                       ORDER BY r.name, a.date""",
+                    (course_code,),
+                )
+                rows = cur.fetchall()
+
+        grouped: dict[str, dict[str, Any]] = {}
+        date_set: set[str] = set()
+
+        for row in rows:
+            rid = row["id"]
+            if rid not in grouped:
+                grouped[rid] = {
+                    "id": rid,
+                    "name": row["name"],
+                    "email": row["email"],
+                    "phone": row["phone"],
+                    "matriculation_number": row["matriculation_number"],
+                }
+            if row["date"] is not None:
+                date_set.add(str(row["date"]))
+                grouped[rid][str(row["date"])] = bool(row["present"])
+
+        all_dates = sorted(date_set)
+        return [
+            {
+                **grouped[rid],
+                **{d: grouped[rid].get(d) for d in all_dates},
+            }
+            for rid in sorted(grouped)
+        ]

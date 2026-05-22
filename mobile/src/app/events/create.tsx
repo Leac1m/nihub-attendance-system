@@ -9,14 +9,14 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MaterialIcons as Icon } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 
 export default function CreateEventScreen() {
   const [courseName, setCourseName] = useState("");
   const [courseCode, setCourseCode] = useState("");
   const [description, setDescription] = useState("");
-  const [duration, setDuration] = useState("");
+  const [durationValue, setDurationValue] = useState("");
+  const [durationUnit, setDurationUnit] = useState("days");
 
   return (
     <SafeAreaView style={styles.container}>
@@ -26,7 +26,7 @@ export default function CreateEventScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity activeOpacity={0.8} style={styles.backButton}>
-            <Icon name="arrow-back" size={24} color="#70008B" />
+            <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>Create New Event</Text>
@@ -44,99 +44,87 @@ export default function CreateEventScreen() {
             schedule.
           </Text>
 
-          {/* Course Name */}
-          <View style={styles.field}>
-            <Text style={styles.label}>Course Name</Text>
+          <View style={styles.form}>
+            {/* Course Name */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Course Name</Text>
 
-            <View style={styles.inputContainer}>
-              <Icon
-                name="school"
-                size={22}
-                color="#827282"
-                style={styles.leftIcon}
-              />
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  value={courseName}
+                  onChangeText={setCourseName}
+                  placeholder="e.g. Advanced UI Design"
+                  placeholderTextColor="#A09AA1"
+                  style={styles.input}
+                />
+              </View>
+            </View>
+
+            {/* Course Code */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Course Code</Text>
+
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  value={courseCode}
+                  onChangeText={setCourseCode}
+                  placeholder="e.g. DES-401"
+                  placeholderTextColor="#A09AA1"
+                  style={styles.input}
+                />
+              </View>
+            </View>
+
+            {/* Description */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Description</Text>
 
               <TextInput
-                value={courseName}
-                onChangeText={setCourseName}
-                placeholder="e.g. Advanced UI Design"
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Brief overview of the event..."
                 placeholderTextColor="#A09AA1"
-                style={styles.input}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                style={styles.textArea}
               />
             </View>
-          </View>
 
-          {/* Course Code */}
-          <View style={styles.field}>
-            <Text style={styles.label}>Course Code</Text>
+            {/* Duration */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Duration</Text>
 
-            <View style={styles.inputContainer}>
-              <Icon
-                name="sell"
-                size={22}
-                color="#827282"
-                style={styles.leftIcon}
-              />
+              <View style={styles.durationRow}>
+                <TextInput
+                  value={durationValue}
+                  onChangeText={setDurationValue}
+                  placeholder="0"
+                  placeholderTextColor="#A09AA1"
+                  keyboardType="numeric"
+                  style={[styles.input, styles.durationValueInput]}
+                />
 
-              <TextInput
-                value={courseCode}
-                onChangeText={setCourseCode}
-                placeholder="e.g. DES-401"
-                placeholderTextColor="#A09AA1"
-                style={styles.input}
-              />
+                <View style={styles.durationUnitSelect}>
+                  <Picker
+                    selectedValue={durationUnit}
+                    onValueChange={(value) => setDurationUnit(value)}
+                    style={styles.durationPicker}
+                    dropdownIconColor="#827282"
+                  >
+                    <Picker.Item label="Days" value="days" />
+                    <Picker.Item label="Weeks" value="weeks" />
+                    <Picker.Item label="Months" value="months" />
+                  </Picker>
+                </View>
+              </View>
             </View>
+
+            {/* Submit Button */}
+            <TouchableOpacity activeOpacity={0.9} style={styles.button}>
+              <Text style={styles.buttonText}>Create Event</Text>
+            </TouchableOpacity>
           </View>
-
-          {/* Description */}
-          <View style={styles.field}>
-            <Text style={styles.label}>Description</Text>
-
-            <TextInput
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Brief overview of the event..."
-              placeholderTextColor="#A09AA1"
-              multiline
-              textAlignVertical="top"
-              style={styles.textArea}
-            />
-          </View>
-
-          {/* Duration */}
-          <View style={styles.field}>
-            <Text style={styles.label}>Duration</Text>
-
-            <View style={styles.pickerContainer}>
-              <Icon
-                name="schedule"
-                size={22}
-                color="#827282"
-                style={styles.leftIcon}
-              />
-
-              <Picker
-                selectedValue={duration}
-                onValueChange={(value) => setDuration(value)}
-                style={styles.picker}
-                dropdownIconColor="#827282"
-              >
-                <Picker.Item label="Select duration" value="" />
-                <Picker.Item label="30 Minutes" value="30m" />
-                <Picker.Item label="1 Hour" value="1h" />
-                <Picker.Item label="2 Hours" value="2h" />
-                <Picker.Item label="Half Day" value="half_day" />
-                <Picker.Item label="Full Day" value="full_day" />
-              </Picker>
-            </View>
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity activeOpacity={0.9} style={styles.button}>
-            <Icon name="add-circle" size={22} color="#FFFFFF" />
-
-            <Text style={styles.buttonText}>Create Event</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -171,13 +159,14 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    justifyContent: "center",
-    alignItems: "center",
     marginRight: 12,
-    backgroundColor: "#FFFFFF",
+  },
+
+  backButtonText: {
+    fontSize: 24,
+    lineHeight: 24,
+    color: "#70008B",
+    fontWeight: "700",
   },
 
   headerTitle: {
@@ -195,7 +184,7 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 28,
+    borderRadius: 24,
     padding: 24,
 
     shadowColor: "#000",
@@ -212,11 +201,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     color: "#504251",
-    marginBottom: 28,
+    marginBottom: 24,
+  },
+
+  form: {
+    gap: 16,
   },
 
   field: {
-    marginBottom: 20,
+    gap: 6,
   },
 
   label: {
@@ -226,25 +219,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  inputContainer: {
-    height: 58,
+  inputWrapper: {
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 14,
     backgroundColor: "#FFFFFF",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-  },
-
-  leftIcon: {
-    marginRight: 12,
   },
 
   input: {
-    flex: 1,
     fontSize: 16,
     color: "#191C1D",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
 
   textArea: {
@@ -257,28 +243,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#191C1D",
     lineHeight: 24,
+    paddingVertical: 16,
   },
 
-  pickerContainer: {
-    height: 58,
+  durationRow: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center",
+  },
+
+  durationValueInput: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+
+  durationUnitSelect: {
+    width: 104,
+    flexShrink: 0,
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 14,
     backgroundColor: "#FFFFFF",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingLeft: 16,
     overflow: "hidden",
+    paddingHorizontal: 4,
   },
 
-  picker: {
-    flex: 1,
+  durationPicker: {
+    width: "100%",
+    height: 52,
+    fontSize: 16,
     color: "#191C1D",
   },
 
   button: {
-    marginTop: 16,
-    height: 58,
+    marginTop: 8,
+    height: 56,
     borderRadius: 999,
     backgroundColor: "#70008B",
     flexDirection: "row",
@@ -299,6 +299,5 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "700",
-    marginLeft: 8,
   },
 });

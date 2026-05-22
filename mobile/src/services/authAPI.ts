@@ -1,4 +1,4 @@
-import { API_ENDPOINTS } from "@/config/api";
+import { API_BASE_URL, API_ENDPOINTS } from "@/config/api";
 import {
   apiRequest,
   setStoredToken,
@@ -207,3 +207,106 @@ export async function markAttendance(
     }
   );
 }
+
+/**
+ * Download the attendance spreadsheet for a given course as an XLSX file.
+ * Fetches the binary blob, saves it to the app's document directory,
+ * then opens the native share sheet so the user can open / share the file.
+ */
+export async function downloadCourseAttendanceSpreadsheet(
+  courseCode: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const token = await getStoredToken();
+    if (!token) {
+      return { success: false, error: "No authentication token found" };
+    }
+
+    const url = `${API_BASE_URL}${API_ENDPOINTS.DOWNLOAD_ATTENDANCE_SPREADSHEET(courseCode)}`;
+    const filename = `${courseCode}_attendance.xlsx`;
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      },
+    });
+
+    if (!response.ok) {
+      let message = `HTTP ${response.status}`;
+      try {
+        const body = await response.json();
+        if (body?.detail) message = body.detail;
+      } catch {
+        /* response body was not JSON — keep status message */
+      }
+      return { success: false, error: message };
+    }
+
+    const blob = await response.blob();
+
+    // ── Web / Expo Web: use <a download> so the browser saves the file ──────
+    if (
+      typeof globalThis !== "undefined" &&
+      (globalThis as any)?.URL?.createObjectURL &&
+      typeof (globalThis as any).document !== "undefined"
+    ) {
+      const href = (globalThis as any).URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      (globalThis as any).URL.revokeObjectURL(href);
+      return { success: true };
+    }
+
+    // ── Expo Go / native: blob → base64 | save | share ──────────────────────
+    const Sharing = await import("expo-sharing");
+    const sharingAvailable = await Sharing.isAvailableAsync();
+    if (!sharingAvailable) {
+      return { success: false, error: "Sharing is not available on this device" };
+    }
+
+    const FileSystem = await import("expo-file-system/legacy");
+    const docDir =
+      typeof FileSystem.documentDirectory === "string"
+        ? FileSystem.documentDirectory
+        : "";
+
+    const fileUri = `${docDir}${filename}`;
+
+    // Convert blob to base64 for FileSystem.writeAsStringAsync
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const bytes = new Uint8Array(reader.result as ArrayBuffer);
+        let binary = "";
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        resolve(btoa(binary));
+      };
+      reader.onerror = (e: any) => reject(e);
+      reader.readAsArrayBuffer(blob);
+    });
+
+    await FileSystem.deleteAsync(fileUri).catch(() => {});
+    await FileSystem.writeAsStringAsync(fileUri, base64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    await Sharing.shareAsync(fileUri, {
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      dialogTitle: `Save ${filename}`,
+    });
+
+    return { success: true };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+

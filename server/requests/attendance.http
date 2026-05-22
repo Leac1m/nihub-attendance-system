@@ -84,3 +84,9 @@ Accept: application/json
 # @name unauthorizedRegistrants
 GET {{baseUrl}}/courses/{{courseCode}}/registrants
 Accept: application/json
+
+### Download Attendance Spreadsheet
+# @name downloadSpreadsheet
+GET {{baseUrl}}/courses/{{courseCode}}/attendance/spreadsheet
+Authorization: Bearer {{authToken}}
+Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
