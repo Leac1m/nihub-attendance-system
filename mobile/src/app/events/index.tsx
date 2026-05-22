@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Course, getCourses, downloadCourseAttendanceSpreadsheet } from "@/services/authAPI";
+import { useAuth } from "@/contexts/AuthContext";
 
 type EventUi = {
   id: string;
@@ -114,6 +115,7 @@ const EventCard = ({ item, onPress, onDownload }: {
 
 export default function EventsScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const [events, setEvents] = useState<EventUi[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -154,6 +156,15 @@ export default function EventsScreen() {
     }
   }, []);
 
+  const handleLogout = useCallback(async () => {
+    await signOut();
+    router.replace("/(auth)/signin");
+  }, [router, signOut]);
+
+  const handleCreateEvent = useCallback(() => {
+    router.push("/events/create");
+  }, [router]);
+
   const filteredEvents = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     if (!query) {
@@ -175,14 +186,14 @@ export default function EventsScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.iconButton}>
-          <Icon name="menu" size={26} color="#504251" />
+        <TouchableOpacity style={styles.iconButton} onPress={handleLogout} accessibilityRole="button" accessibilityLabel="Log out">
+          <Icon name="logout" size={26} color="#504251" />
         </TouchableOpacity>
 
         <Text style={styles.logo}>NIHUB</Text>
 
-        <TouchableOpacity style={styles.profile}>
-          <Icon name="person" size={20} color="#504251" />
+        <TouchableOpacity style={styles.profile} onPress={handleCreateEvent} accessibilityRole="button" accessibilityLabel="Create event">
+          <Icon name="add-circle-outline" size={22} color="#504251" />
         </TouchableOpacity>
       </View>
 
