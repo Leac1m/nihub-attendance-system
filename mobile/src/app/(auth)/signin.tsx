@@ -19,7 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [secureText, setSecureText] = useState(true);
   const [error, setError] = useState("");
@@ -27,14 +27,14 @@ export default function LoginScreen() {
   const { signIn, isLoading } = useAuth();
 
   const handleSignIn = async () => {
-    if (!email || !password) {
-      setError("Please enter email and password");
+    if (!username || !password) {
+      setError("Please enter username and password");
       return;
     }
 
     try {
       setError("");
-      await signIn(email, password);
+      await signIn(username, password);
       router.replace("/events");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed");
@@ -87,24 +87,23 @@ export default function LoginScreen() {
 
               {/* Form */}
               <View style={styles.form}>
-                {/* Email */}
+                {/* Username */}
                 <View style={styles.inputWrapper}>
                   <Icon
-                    name="mail"
+                    name="user"
                     size={20}
                     color="#A3A3A3"
                     style={styles.leftIcon}
                   />
 
                   <TextInput
-                    value={email}
+                    value={username}
                     onChangeText={(text) => {
-                      setEmail(text);
+                      setUsername(text);
                       setError("");
                     }}
-                    placeholder="Email Address"
+                    placeholder="Username"
                     placeholderTextColor="#A3A3A3"
-                    keyboardType="email-address"
                     autoCapitalize="none"
                     editable={!isLoading}
                     style={styles.input}

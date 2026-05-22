@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Feather as Icon } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as authAPI from "@/services/authAPI";
 
@@ -107,7 +107,7 @@ export default function RegisterScreen() {
             {/* Email */}
             <InputField
               label="Email"
-              icon="mail-outline"
+              icon="mail"
               placeholder="name@nihub.com"
               value={email}
               onChangeText={setEmail}
@@ -118,7 +118,7 @@ export default function RegisterScreen() {
             {/* Username */}
             <InputField
               label="Username"
-              icon="badge"
+              icon="user"
               placeholder="staff_id_01"
               value={username}
               onChangeText={setUsername}
@@ -128,7 +128,7 @@ export default function RegisterScreen() {
             {/* Password */}
             <InputField
               label="Password"
-              icon="lock-outline"
+              icon="lock"
               placeholder="••••••••"
               value={password}
               onChangeText={setPassword}
@@ -139,7 +139,7 @@ export default function RegisterScreen() {
             {/* Confirm Password */}
             <InputField
               label="Confirm Password"
-              icon="verified-user"
+              icon="lock"
               placeholder="••••••••"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -164,7 +164,7 @@ export default function RegisterScreen() {
                 </>
               ) : success ? (
                 <>
-                  <MaterialIcons
+                  <Icon
                     name="check-circle"
                     size={20}
                     color="#fff"
@@ -178,8 +178,8 @@ export default function RegisterScreen() {
                 <>
                   <Text style={styles.buttonText}>Register</Text>
 
-                  <MaterialIcons
-                    name="how-to-reg"
+                  <Icon
+                    name="user-plus"
                     size={20}
                     color="#fff"
                   />
@@ -196,7 +196,7 @@ export default function RegisterScreen() {
                 Already have your code? Enter it here
               </Text>
 
-              <MaterialIcons
+              <Icon
                 name="chevron-right"
                 size={18}
                 color="#0059bb"
@@ -225,7 +225,7 @@ export default function RegisterScreen() {
 
 type InputFieldProps = {
   label: string;
-  icon: keyof typeof MaterialIcons.glyphMap;
+  icon: keyof typeof Icon.glyphMap;
   placeholder: string;
   value: string;
   onChangeText: (text: string) => void;
@@ -256,7 +256,7 @@ function InputField({
           focused && styles.inputFocused,
         ]}
       >
-        <MaterialIcons
+        <Icon
           name={icon}
           size={22}
           color={focused ? "#70008b" : "#827282"}
