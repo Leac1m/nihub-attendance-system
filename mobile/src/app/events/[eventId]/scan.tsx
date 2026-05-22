@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
-  Image,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
@@ -116,23 +115,8 @@ export default function QRScannerScreen() {
     } as any);
   };
 
-  const handleScanSuccess = () => {
-    if (!currentAttendee) {
-      return;
-    }
-
-    // Navigate to success screen
-    router.push({
-      pathname: "/events/[eventId]/scan-success",
-      params: {
-        eventId: eventId as string,
-        attendeeId: currentAttendee.id,
-      },
-    } as any);
-  };
-
   const handleBack = () => {
-    router.back();
+    router.replace("/events");
   };
 
   return (
@@ -159,12 +143,8 @@ export default function QRScannerScreen() {
           </Text>
         </View>
 
-        <View style={styles.avatar}>
-          <Image
-            source={require("@/assets/images/instructor-avatar.jpg")}
-            style={styles.avatarImage}
-          />
-        </View>
+        {/* Spacer keeps title centred */}
+        <View style={styles.headerSpacer} />
       </View>
 
       {/* Scanner Area */}
@@ -225,17 +205,6 @@ export default function QRScannerScreen() {
           />
         </View>
 
-        <View style={styles.attendeeIdChip}>
-          <Text style={styles.attendeeIdLabel}>Scanned attendee ID</Text>
-          <Text style={styles.attendeeIdValue}>
-            {isLoading
-              ? "Loading..."
-              : error
-                ? "Unavailable"
-                : currentAttendee?.id || "No attendee found"}
-          </Text>
-        </View>
-
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
         {/* Flash Button */}
@@ -253,21 +222,6 @@ export default function QRScannerScreen() {
             attendance.
           </Text>
         </View>
-
-        {/* Simulate Scan Button (for demo) */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[
-            styles.simulateScanButton,
-            (!currentAttendee || isLoading || !permission?.granted) &&
-              styles.simulateScanButtonDisabled,
-          ]}
-          onPress={handleScanSuccess}
-          disabled={!currentAttendee || isLoading || !permission?.granted}
-        >
-          <Icon name="check" size={20} color="#FFFFFF" />
-          <Text style={styles.simulateScanText}>Simulate Scan</Text>
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -328,19 +282,9 @@ const styles = StyleSheet.create({
     color: "#827282",
   },
 
-  avatar: {
+  headerSpacer: {
     width: 42,
     height: 42,
-    borderRadius: 21,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#D3C1D2",
-    backgroundColor: "#E1E3E4",
-  },
-
-  avatarImage: {
-    width: "100%",
-    height: "100%",
   },
 
   scannerContainer: {
@@ -406,33 +350,7 @@ const styles = StyleSheet.create({
     marginBottom: 42,
   },
 
-  attendeeIdChip: {
-    minWidth: 220,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    alignItems: "center",
-    marginBottom: 18,
-  },
 
-  attendeeIdLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "rgba(255,255,255,0.65)",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-
-  attendeeIdValue: {
-    fontSize: 18,
-    fontWeight: "800",
-    letterSpacing: 0.6,
-    color: "#FFFFFF",
-  },
 
   errorText: {
     marginBottom: 12,
@@ -534,36 +452,5 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.9)",
   },
 
-  simulateScanButton: {
-    position: "absolute",
-    bottom: 24,
-    left: 20,
-    right: 20,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: "#70008B",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
 
-    shadowColor: "#70008B",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-
-  simulateScanButtonDisabled: {
-    opacity: 0.45,
-  },
-
-  simulateScanText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "700",
-  },
 });
