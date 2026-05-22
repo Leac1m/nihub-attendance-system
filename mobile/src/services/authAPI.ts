@@ -1,4 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS } from "@/config/api";
+import { Platform } from "react-native";
 import {
   apiRequest,
   setStoredToken,
@@ -244,14 +245,14 @@ export async function downloadCourseAttendanceSpreadsheet(
       return { success: false, error: message };
     }
 
-    const blob = await response.blob();
-
-    // ── Web / Expo Web: use <a download> so the browser saves the file ──────
-    if (
+    const isWeb =
       typeof globalThis !== "undefined" &&
       (globalThis as any)?.URL?.createObjectURL &&
-      typeof (globalThis as any).document !== "undefined"
-    ) {
+      typeof (globalThis as any).document !== "undefined";
+
+    // ── Web / Expo Web: use <a download> so the browser saves the file ──────
+    if (isWeb) {
+      const blob = await response.blob();
       const href = (globalThis as any).URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = href;
@@ -263,46 +264,36 @@ export async function downloadCourseAttendanceSpreadsheet(
       return { success: true };
     }
 
-    // ── Expo Go / native: blob → base64 | save | share ──────────────────────
-    const Sharing = await import("expo-sharing");
-    const sharingAvailable = await Sharing.isAvailableAsync();
-    if (!sharingAvailable) {
-      return { success: false, error: "Sharing is not available on this device" };
+    // ── Expo Go / native: save the file locally in Documents ───────────────
+    const { File, Paths } = await import("expo-file-system");
+    const file = new File(Paths.document, filename);
+
+    if (file.exists) {
+      file.delete();
     }
 
-    const FileSystem = await import("expo-file-system/legacy");
-    const docDir =
-      typeof FileSystem.documentDirectory === "string"
-        ? FileSystem.documentDirectory
-        : "";
+    const arrayBuffer = await response.arrayBuffer();
+    file.write(new Uint8Array(arrayBuffer));
 
-    const fileUri = `${docDir}${filename}`;
-
-    // Convert blob to base64 for FileSystem.writeAsStringAsync
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const bytes = new Uint8Array(reader.result as ArrayBuffer);
-        let binary = "";
-        for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        resolve(btoa(binary));
-      };
-      reader.onerror = (e: any) => reject(e);
-      reader.readAsArrayBuffer(blob);
-    });
-
-    await FileSystem.deleteAsync(fileUri).catch(() => {});
-    await FileSystem.writeAsStringAsync(fileUri, base64, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-
-    await Sharing.shareAsync(fileUri, {
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      dialogTitle: `Save ${filename}`,
-    });
+    if (Platform.OS === "android") {
+      const { getContentUriAsync } = await import("expo-file-system/legacy");
+      const IntentLauncher = await import("expo-intent-launcher");
+      const contentUri = await getContentUriAsync(file.uri);
+      await IntentLauncher.startActivityAsync("android.intent.action.VIEW", {
+        data: contentUri,
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        flags: 1,
+      });
+    } else {
+      const Sharing = await import("expo-sharing");
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, {
+          mimeType:
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          dialogTitle: "Open attendance spreadsheet",
+        });
+      }
+    }
 
     return { success: true };
   } catch (err: unknown) {

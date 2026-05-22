@@ -4,6 +4,11 @@ import io
 from datetime import date
 from pathlib import Path
 from uuid import uuid4
+from dotenv import load_dotenv
+
+# Load .env from the server directory during local development so
+# environment variables defined in .env are available via os.getenv().
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
 from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware

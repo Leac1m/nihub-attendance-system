@@ -21,7 +21,8 @@ QR_CODES_DIR = Path(__file__).parent / "qr_codes"
 def is_configured() -> bool:
         return bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD)
 
-print(f"EmailService configured: {is_configured()}", SMTP_PASSWORD)
+print(f"EmailService configured: {is_configured()}")
+logger.debug(f"EmailService configured: {is_configured()}")
 class EmailService:
     def is_configured(self) -> bool:
         return bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD)
