@@ -2,9 +2,11 @@
 FROM node:24-alpine AS builder
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
+RUN npm install -g pnpm
 
-RUN npm install
+COPY package.json pnpm-lock.yaml ./
+
+RUN pnpm install --frozen-lockfile
 
 COPY . .
 
@@ -12,9 +14,7 @@ COPY . .
 ARG VITE_API_URL=http://localhost:8000
 ENV VITE_API_URL=${VITE_API_URL}
 
-# RUN npm ci --silent
-
-RUN npm run build
+RUN pnpm run build
 
 # runtime
 FROM docker.io/nginxinc/nginx-unprivileged:alpine

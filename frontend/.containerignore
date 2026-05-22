@@ -8,3 +8,5 @@ LICENSE
 .gitignore
 .git/
 .gitlab-ci.yml
+pnpm-debug.log*
+*.local

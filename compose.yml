@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  nihub-server:
+    build:
+      context: ./server
+      dockerfile: Containerfile
+    container_name: nihub-server
+    ports:
+      - "8000:8000"
+    networks:
+      - nihub-net
+    environment:
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me}
+    volumes:
+      - server_uploads:/app/uploads
+      - server_qr_codes:/app/qr_codes
+
+  nihub-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Containerfile
+    container_name: nihub-frontend
+    ports:
+      - "8080:8080"
+    networks:
+      - nihub-net
+    depends_on:
+      - nihub-server
+
+networks:
+  nihub-net:
+    driver: bridge
+
+volumes:
+  server_uploads:
+  server_qr_codes:
