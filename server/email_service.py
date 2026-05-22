@@ -28,7 +28,12 @@ def _get_config() -> dict:
 
 def is_configured() -> bool:
     cfg = _get_config()
+    # It is configured if host is set AND (credentials are provided OR the host/port has been customized for local dev)
+    is_customized = "SMTP_HOST" in os.environ or "SMTP_PORT" in os.environ
+    if is_customized:
+        return bool(cfg["host"])
     return bool(cfg["host"] and cfg["username"] and cfg["password"])
+
 
 
 def _sender_address() -> str:
@@ -157,15 +162,31 @@ class EmailService:
 
     def _send(self, msg: MIMEMultipart) -> None:
         cfg = _get_config()
-        if cfg["use_tls"]:
+        
+        # Scenario 1: Modern Secure SMTP with STARTTLS upgrade (Usually Port 587)
+        if cfg["use_tls"] and cfg["port"] != 465:
             context = ssl.create_default_context()
             with smtplib.SMTP(cfg["host"], cfg["port"]) as server:
+                server.ehlo()
                 server.starttls(context=context)
-                server.login(cfg["username"], cfg["password"])
+                server.ehlo()
+                if cfg["username"] and cfg["password"]:
+                    server.login(cfg["username"], cfg["password"])
                 server.sendmail(msg["From"], msg["To"], msg.as_string())
+                
+        # Scenario 2: Legacy Secure SMTP wrapped in implicit SSL (Usually Port 465)
+        elif cfg["port"] == 465:
+            context = ssl.create_default_context()
+            with smtplib.SMTP_SSL(cfg["host"], cfg["port"], context=context) as server:
+                if cfg["username"] and cfg["password"]:
+                    server.login(cfg["username"], cfg["password"])
+                server.sendmail(msg["From"], msg["To"], msg.as_string())
+                
+        # Scenario 3: Local Dev / Unencrypted mail relays (Usually Port 25 or 1025)
         else:
-            with smtplib.SMTP_SSL(cfg["host"], cfg["port"]) as server:
-                server.login(cfg["username"], cfg["password"])
+            with smtplib.SMTP(cfg["host"], cfg["port"]) as server:
+                if cfg["username"] and cfg["password"]:
+                    server.login(cfg["username"], cfg["password"])
                 server.sendmail(msg["From"], msg["To"], msg.as_string())
         logger.info("Sent email to %s", msg["To"])
 
