@@ -321,6 +321,18 @@ async def get_attendance_spreadsheet(
 
 
 
+@app.delete("/courses/{course_code}", status_code=200)
+async def delete_course(
+    course_code: str,
+    staff: StaffPublic = Depends(get_current_staff),
+):
+    try:
+        service.delete_course(course_code)
+        return {"message": "Event deleted"}
+    except CourseNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @app.post("/auth/login", response_model=LoginResponse)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     try:

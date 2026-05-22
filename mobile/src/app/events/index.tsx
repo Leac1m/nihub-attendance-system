@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,11 +9,18 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Course, getCourses, downloadCourseAttendanceSpreadsheet } from "@/services/authAPI";
+import { Swipeable } from "react-native-gesture-handler";
+import {
+  Course,
+  getCourses,
+  downloadCourseAttendanceSpreadsheet,
+  deleteCourse,
+} from "@/services/authAPI";
 import { useAuth } from "@/contexts/AuthContext";
 
 type EventUi = {
@@ -46,72 +53,148 @@ function mapCourseToEvent(course: Course, index: number): EventUi {
   };
 }
 
-const EventCard = ({ item, onPress, onDownload }: {
+// ─── Delete action rendered to the right side of the swipeable ───────────────
+
+const DeleteAction = ({
+  progress,
+  onDelete,
+}: {
+  progress: Animated.AnimatedInterpolation<number>;
+  onDelete: () => void;
+}) => {
+  const scale = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.7, 1],
+    extrapolate: "clamp",
+  });
+
+  const opacity = progress.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, 0.7, 1],
+    extrapolate: "clamp",
+  });
+
+  return (
+    <Animated.View style={[styles.deleteActionWrapper, { opacity }]}>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        style={styles.deleteAction}
+        onPress={onDelete}
+        accessibilityRole="button"
+        accessibilityLabel="Delete event"
+      >
+        <Animated.View style={{ alignItems: "center", transform: [{ scale }] }}>
+          <Icon name="delete-outline" size={24} color="#FFFFFF" />
+          <Text style={styles.deleteActionLabel}>Delete</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+// ─── EventCard ────────────────────────────────────────────────────────────────
+
+const EventCard = ({
+  item,
+  onPress,
+  onDownload,
+  onDelete,
+}: {
   item: EventUi;
   onPress: () => void;
   onDownload: () => void;
+  onDelete: () => void;
 }) => {
+  const swipeableRef = useRef<Swipeable>(null);
+
+  const handleDelete = useCallback(() => {
+    // Close the swipeable first, then fire the parent handler (which shows the Alert)
+    swipeableRef.current?.close();
+    // Small delay so the card springs back before the Alert appears
+    setTimeout(onDelete, 200);
+  }, [onDelete]);
+
+  const renderRightActions = useCallback(
+    (
+      progress: Animated.AnimatedInterpolation<number>,
+      _drag: Animated.AnimatedInterpolation<number>
+    ) => (
+      <DeleteAction progress={progress} onDelete={handleDelete} />
+    ),
+    [handleDelete]
+  );
+
   return (
-    <TouchableOpacity activeOpacity={0.9} style={styles.card} onPress={onPress}>
-      {/* Decorative background */}
-      <View
-        style={[
-          styles.cardDecoration,
-          {
-            backgroundColor: item.bg,
-          },
-        ]}
-      />
-
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{item.title}</Text>
-
+    <Swipeable
+      ref={swipeableRef}
+      friction={2}
+      overshootRight={false}
+      rightThreshold={60}
+      renderRightActions={renderRightActions}
+    >
+      <TouchableOpacity activeOpacity={0.9} style={styles.card} onPress={onPress}>
+        {/* Decorative background */}
         <View
           style={[
-            styles.badge,
+            styles.cardDecoration,
             {
               backgroundColor: item.bg,
-              borderColor: item.accent + "40",
             },
           ]}
-        >
-          <Text
+        />
+
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>{item.title}</Text>
+
+          <View
             style={[
-              styles.badgeText,
+              styles.badge,
               {
-                color: item.accent,
+                backgroundColor: item.bg,
+                borderColor: item.accent + "40",
               },
             ]}
           >
-            {item.code}
-          </Text>
+            <Text
+              style={[
+                styles.badgeText,
+                {
+                  color: item.accent,
+                },
+              ]}
+            >
+              {item.code}
+            </Text>
+          </View>
         </View>
-      </View>
 
-      <Text style={styles.description}>{item.description}</Text>
+        <Text style={styles.description}>{item.description}</Text>
 
-      <View style={styles.footer}>
-        <View style={styles.footerMeta}>
-          <Icon name="schedule" size={18} color="#6B7280" />
-          <Text style={styles.duration}>{item.duration}</Text>
+        <View style={styles.footer}>
+          <View style={styles.footerMeta}>
+            <Icon name="schedule" size={18} color="#6B7280" />
+            <Text style={styles.duration}>{item.duration}</Text>
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.downloadButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              onDownload();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Download attendee spreadsheet"
+          >
+            <Icon name="file-download" size={20} color="#70008B" />
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={styles.downloadButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            onDownload();
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Download attendee spreadsheet"
-        >
-          <Icon name="file-download" size={20} color="#70008B" />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Swipeable>
   );
 };
+
+// ─── EventsScreen ─────────────────────────────────────────────────────────────
 
 export default function EventsScreen() {
   const router = useRouter();
@@ -120,6 +203,7 @@ export default function EventsScreen() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingCode, setDeletingCode] = useState<string | null>(null);
 
   const loadCourses = useCallback(async () => {
     setIsLoading(true);
@@ -165,6 +249,47 @@ export default function EventsScreen() {
     router.push("/events/create");
   }, [router]);
 
+  /**
+   * Two-phase delete flow:
+   * 1. Show a destructive Alert for confirmation.
+   * 2. On confirm, call the server, remove from local state on success.
+   */
+  const handleDeleteEvent = useCallback(
+    (event: EventUi) => {
+      Alert.alert(
+        `Delete "${event.title}"?`,
+        "This will permanently remove the event and all of its attendance records. This action cannot be undone.",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              setDeletingCode(event.code);
+              const result = await deleteCourse(event.code);
+              setDeletingCode(null);
+
+              if (!result.success) {
+                Alert.alert(
+                  "Delete failed",
+                  result.error ?? "Could not delete the event. Please try again.",
+                );
+                return;
+              }
+
+              // Optimistically remove from local state
+              setEvents((prev) => prev.filter((e) => e.code !== event.code));
+            },
+          },
+        ]
+      );
+    },
+    []
+  );
+
   const filteredEvents = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     if (!query) {
@@ -207,6 +332,9 @@ export default function EventsScreen() {
             {/* Screen Title */}
             <Text style={styles.screenTitle}>Events</Text>
 
+            {/* Hint */}
+            <Text style={styles.swipeHint}>← Swipe left on a card to delete</Text>
+
             {/* Search */}
             <View style={styles.searchContainer}>
               <Icon
@@ -237,11 +365,21 @@ export default function EventsScreen() {
           </>
         }
         renderItem={({ item }) => (
-          <EventCard
-            item={item}
-            onPress={() => handleEventPress(item.id)}
-            onDownload={() => handleDownloadAttendanceSheet(item.id)}
-          />
+          <View style={styles.cardContainer}>
+            {/* Deletion loading overlay */}
+            {deletingCode === item.code ? (
+              <View style={styles.deletingOverlay}>
+                <ActivityIndicator size="small" color="#BA1A1A" />
+                <Text style={styles.deletingText}>Deleting…</Text>
+              </View>
+            ) : null}
+            <EventCard
+              item={item}
+              onPress={() => handleEventPress(item.id)}
+              onDownload={() => handleDownloadAttendanceSheet(item.id)}
+              onDelete={() => handleDeleteEvent(item)}
+            />
+          </View>
         )}
         ListEmptyComponent={
           !isLoading ? (
@@ -314,7 +452,14 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "700",
     color: "#191C1D",
-    marginBottom: 18,
+    marginBottom: 6,
+  },
+
+  swipeHint: {
+    fontSize: 12,
+    color: "#9E9E9E",
+    marginBottom: 16,
+    fontStyle: "italic",
   },
 
   searchContainer: {
@@ -366,6 +511,56 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 8,
   },
+
+  // ── Card container (for overlay positioning) ───────────────────────────────
+
+  cardContainer: {
+    position: "relative",
+  },
+
+  deletingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+    backgroundColor: "rgba(255,255,255,0.75)",
+    borderRadius: 28,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+
+  deletingText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#BA1A1A",
+  },
+
+  // ── Swipeable delete action ────────────────────────────────────────────────
+
+  deleteActionWrapper: {
+    width: 88,
+    marginLeft: 8,
+    borderRadius: 28,
+    overflow: "hidden",
+  },
+
+  deleteAction: {
+    flex: 1,
+    backgroundColor: "#BA1A1A",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 28,
+  },
+
+  deleteActionLabel: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 4,
+    letterSpacing: 0.3,
+  },
+
+  // ── Card ──────────────────────────────────────────────────────────────────
 
   card: {
     backgroundColor: "#FFFFFF",

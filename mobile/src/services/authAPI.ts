@@ -354,3 +354,19 @@ export async function downloadCourseAttendanceSpreadsheet(
   }
 }
 
+
+/**
+ * Delete a course (event) by course code. Requires staff authentication.
+ * This will also cascade-delete all registrants and attendance records.
+ */
+export async function deleteCourse(
+  courseCode: string
+): Promise<ApiResponse<{ message: string }>> {
+  return apiRequest<{ message: string }>(
+    API_ENDPOINTS.DELETE_COURSE(courseCode),
+    {
+      method: "DELETE",
+      requiresAuth: true,
+    }
+  );
+}

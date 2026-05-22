@@ -172,6 +172,13 @@ class CourseService:
                     raise CourseNotFoundError("Course not found")
                 return dict(row)
 
+    def delete_course(self, course_code: str) -> None:
+        with self._get_connection() as conn:
+            with conn.cursor() as cur:
+                self._verify_course(cur, course_code)
+                cur.execute("DELETE FROM courses WHERE code = %s", (course_code,))
+                conn.commit()
+
     def _generate_qr_code(self, registrant_id: str) -> str:
         qr_dir = Path(__file__).parent / "qr_codes"
         qr_dir.mkdir(exist_ok=True)

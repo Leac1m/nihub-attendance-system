@@ -46,6 +46,7 @@ export const API_ENDPOINTS = {
     `/courses/${courseCode}/attendance/${matricNumber}`,
   DOWNLOAD_ATTENDANCE_SPREADSHEET: (courseCode: string) =>
     `/courses/${courseCode}/attendance/spreadsheet`,
+  DELETE_COURSE: (courseCode: string) => `/courses/${courseCode}`,
 };
 
 export const API_CONFIG = {
