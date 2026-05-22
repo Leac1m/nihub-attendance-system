@@ -88,9 +88,7 @@ export default function RegisterScreen() {
           <View style={styles.header}>
             <View style={styles.logoWrapper}>
               <Image
-                source={{
-                  uri: "https://lh3.googleusercontent.com/aida/ADBb0ujHs_wddmB7azrTjBxAS0NRxDp0Qqf9xzykW-rW2GUcQURz0KQeNT4TmCwejtjuNkWeJMk2myD-GA1I5-lUGrl07KHMfyG1-BtVi9Kh-gf8wXm-shS78wzz6zM3FYycg31ePPMQTUZXx3VCb6AYQTZchFNP8YcZoS8yX7hFhoJgUs97bIPLAfX8YauuxIPOAezSPmY7U3n4ZOFK0JiVObtBs1fCfgNds8J6M0H21uKyUHPetam363C4rGk",
-                }}
+                source={require("@/assets/images/logo.png")}
                 style={styles.logo}
                 resizeMode="contain"
               />

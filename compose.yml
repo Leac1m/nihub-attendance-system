@@ -28,6 +28,8 @@ services:
       - "8000:8000"
     networks:
       - nihub-net
+    env_file:
+      - ./server/.env
     environment:
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me}
       - DATABASE_URL=postgresql://nihub:nihub-password@postgres:5432/nihub
@@ -37,6 +39,7 @@ services:
     volumes:
       - server_uploads:/app/uploads
       - server_qr_codes:/app/qr_codes
+
 
   nihub-frontend:
     build:

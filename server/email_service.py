@@ -9,27 +9,36 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
-EMAIL_FROM = os.getenv("EMAIL_FROM", "")
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
-
 QR_CODES_DIR = Path(__file__).parent / "qr_codes"
 
-def is_configured() -> bool:
-    return bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD)
 
-print(f"SMTP Configuration: {SMTP_HOST}:{SMTP_PORT}", "is configured" if is_configured() else "is NOT configured")
+def _get_config() -> dict:
+    """Read SMTP config lazily so os.getenv() runs after load_dotenv() or
+    Docker env injection — not at import time."""
+    return {
+        "host": os.getenv("SMTP_HOST", "smtp.gmail.com"),
+        "port": int(os.getenv("SMTP_PORT", "587")),
+        "username": os.getenv("SMTP_USERNAME", ""),
+        "password": os.getenv("SMTP_PASSWORD", ""),
+        "use_tls": os.getenv("SMTP_USE_TLS", "true").lower() == "true",
+        "from": os.getenv("EMAIL_FROM", ""),
+        "admin_email": os.getenv("ADMIN_EMAIL", ""),
+    }
+
+
+def is_configured() -> bool:
+    cfg = _get_config()
+    return bool(cfg["host"] and cfg["username"] and cfg["password"])
+
+
 def _sender_address() -> str:
-    return EMAIL_FROM or SMTP_USERNAME
+    cfg = _get_config()
+    return cfg["from"] or cfg["username"]
 
 
 class EmailService:
     def is_configured(self) -> bool:
-        return bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD)
+        return is_configured()
 
     def send_staff_verification_email(
         self,
@@ -46,7 +55,8 @@ class EmailService:
             )
             return
 
-        if not ADMIN_EMAIL:
+        cfg = _get_config()
+        if not cfg["admin_email"]:
             logger.warning(
                 "ADMIN_EMAIL not configured — skipping staff verification email for %s",
                 email,
@@ -56,7 +66,7 @@ class EmailService:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = f"NIHUB staff verification code for {username}"
         msg["From"] = _sender_address()
-        msg["To"] = ADMIN_EMAIL
+        msg["To"] = cfg["admin_email"]
 
         body_text = (
             f"A new staff account was created.\n\n"
@@ -90,13 +100,14 @@ class EmailService:
             )
             return
 
+        cfg = _get_config()
         recipient = registrant["email"]
         name = registrant["name"]
         m_id = registrant["id"]
 
         msg = MIMEMultipart("related")
         msg["Subject"] = f"Welcome {name} — Your Registration QR Code"
-        msg["From"] = EMAIL_FROM
+        msg["From"] = cfg["from"] or cfg["username"]
         msg["To"] = recipient
 
         body_text = (
@@ -145,17 +156,32 @@ class EmailService:
         self._send(msg)
 
     def _send(self, msg: MIMEMultipart) -> None:
-        if SMTP_USE_TLS:
+        cfg = _get_config()
+        if cfg["use_tls"]:
             context = ssl.create_default_context()
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            with smtplib.SMTP(cfg["host"], cfg["port"]) as server:
                 server.starttls(context=context)
-                server.login(SMTP_USERNAME, SMTP_PASSWORD)
+                server.login(cfg["username"], cfg["password"])
                 server.sendmail(msg["From"], msg["To"], msg.as_string())
         else:
-            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
-                server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            with smtplib.SMTP_SSL(cfg["host"], cfg["port"]) as server:
+                server.login(cfg["username"], cfg["password"])
                 server.sendmail(msg["From"], msg["To"], msg.as_string())
-        logger.info("Sent registration email to %s", msg["To"])
+        logger.info("Sent email to %s", msg["To"])
 
 
 email_service = EmailService()
+
+# Startup log — visible in container output so you can confirm the env vars were injected.
+_cfg = _get_config()
+if email_service.is_configured():
+    logger.info(
+        "Email service configured: SMTP %s:%s (TLS=%s) from=%s",
+        _cfg["host"], _cfg["port"], _cfg["use_tls"], _cfg["from"] or _cfg["username"],
+    )
+else:
+    logger.warning(
+        "Email service NOT configured — SMTP_USERNAME/SMTP_PASSWORD missing. "
+        "Emails will be skipped. Set them in server/.env and restart."
+    )
+
