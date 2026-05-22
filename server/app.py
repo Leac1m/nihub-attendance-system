@@ -2,6 +2,7 @@ import logging
 import os
 import io
 from datetime import date
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 from dotenv import load_dotenv
@@ -28,9 +29,13 @@ from course_service import (
 from email_service import email_service
 from staff_auth import (
     StaffAuthService,
+    StaffAlreadyExistsError,
+    StaffNotVerifiedError,
     StaffPublic,
     StaffNotFoundError,
     InvalidCredentialsError,
+    InvalidVerificationCodeError,
+    VerificationCodeExpiredError,
     oauth2_scheme,
 )
 
@@ -85,6 +90,24 @@ class RegistrantCreate(BaseModel):
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class StaffRegisterRequest(BaseModel):
+    email: EmailStr
+    username: str
+    password: str
+
+
+class StaffVerifyRequest(BaseModel):
+    username: str
+    pin: str
+
+
+class StaffRegisterResponse(BaseModel):
+    message: str
+    username: str
+    email: EmailStr
+    verification_expires_at: datetime
 
 
 def get_current_staff(token: str = Depends(oauth2_scheme)) -> StaffPublic:
@@ -306,3 +329,59 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         return {"access_token": token, "token_type": "bearer"}
     except (StaffNotFoundError, InvalidCredentialsError):
         raise HTTPException(status_code=401, detail="Invalid username or password")
+    except StaffNotVerifiedError:
+        raise HTTPException(status_code=403, detail="Account not verified yet")
+
+
+@app.post("/auth/register", response_model=StaffRegisterResponse, status_code=201)
+async def register_staff(payload: StaffRegisterRequest):
+    verification_pin = auth_service.generate_verification_pin()
+    verification_expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+
+    try:
+        staff = auth_service.create_staff(
+            username=payload.username,
+            email=payload.email,
+            password=payload.password,
+            verification_pin=verification_pin,
+            verification_pin_expires_at=verification_expires_at,
+        )
+
+        try:
+            email_service.send_staff_verification_email(
+                username=staff["username"],
+                email=staff["email"],
+                verification_pin=verification_pin,
+                expires_at=verification_expires_at.isoformat(),
+            )
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                "Failed to send staff verification email to admin for %s: %s",
+                staff.get("email"),
+                exc,
+            )
+
+        return {
+            "message": "Staff account created. Share the PIN with the admin for verification.",
+            "username": staff["username"],
+            "email": staff["email"],
+            "verification_expires_at": verification_expires_at,
+        }
+    except StaffAlreadyExistsError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/auth/verify-account", response_model=LoginResponse)
+async def verify_staff_account(payload: StaffVerifyRequest):
+    try:
+        staff = auth_service.verify_staff_account(payload.username, payload.pin)
+        token = auth_service.create_access_token(subject=staff["username"])
+        return {"access_token": token, "token_type": "bearer"}
+    except StaffNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except VerificationCodeExpiredError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except InvalidVerificationCodeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+

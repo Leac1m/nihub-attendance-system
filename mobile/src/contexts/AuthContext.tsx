@@ -13,6 +13,7 @@ type AuthContextType = {
   user: { email: string } | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshAuthState: () => Promise<void>;
   isLoading: boolean;
   isRestoring: boolean;
 };
@@ -99,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         signIn,
         signOut,
+        refreshAuthState: restoreToken,
         isLoading,
         isRestoring,
       }}

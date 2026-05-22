@@ -13,6 +13,24 @@ export interface LoginResponse {
   token_type: string;
 }
 
+export interface RegisterStaffResponse {
+  message: string;
+  username: string;
+  email: string;
+  verification_expires_at: string;
+}
+
+export interface RegisterStaffPayload {
+  email: string;
+  username: string;
+  password: string;
+}
+
+export interface VerifyStaffPayload {
+  username: string;
+  pin: string;
+}
+
 export interface CourseResponse {
   courses: Course[];
 }
@@ -82,6 +100,41 @@ export async function login(
   } else if (!result.success) {
     // Clear any existing token on login failure
     await clearStoredToken();
+  }
+
+  return result;
+}
+
+/**
+ * Register a new staff account.
+ */
+export async function registerStaff(
+  payload: RegisterStaffPayload
+): Promise<ApiResponse<RegisterStaffResponse>> {
+  return apiRequest<RegisterStaffResponse>(API_ENDPOINTS.REGISTER_STAFF, {
+    method: "POST",
+    requiresAuth: false,
+    body: payload,
+  });
+}
+
+/**
+ * Verify a staff account using username + PIN and store the returned token.
+ */
+export async function verifyStaffAccount(
+  payload: VerifyStaffPayload
+): Promise<ApiResponse<LoginResponse>> {
+  const result = await apiRequest<LoginResponse>(
+    API_ENDPOINTS.VERIFY_STAFF_ACCOUNT,
+    {
+      method: "POST",
+      requiresAuth: false,
+      body: payload,
+    }
+  );
+
+  if (result.success && result.data?.access_token) {
+    await setStoredToken(result.data.access_token);
   }
 
   return result;

@@ -31,6 +31,8 @@ export const API_BASE_URL = getApiBaseUrl();
  */
 export const API_ENDPOINTS = {
   LOGIN: "/auth/login",
+  REGISTER_STAFF: "/auth/register",
+  VERIFY_STAFF_ACCOUNT: "/auth/verify-account",
   GET_COURSES: "/courses",
   GET_REGISTRANTS: (courseCode: string) =>
     `/courses/${courseCode}/registrants`,

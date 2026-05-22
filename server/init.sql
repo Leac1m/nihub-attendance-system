@@ -13,8 +13,20 @@ CREATE TABLE IF NOT EXISTS staff (
     username VARCHAR(50) UNIQUE NOT NULL,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL,
-    password VARCHAR(255) NOT NULL
+    password VARCHAR(255) NOT NULL,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    verification_pin VARCHAR(10),
+    verification_pin_expires_at TIMESTAMPTZ
 );
+
+ALTER TABLE staff
+    ADD COLUMN IF NOT EXISTS is_verified BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE staff
+    ADD COLUMN IF NOT EXISTS verification_pin VARCHAR(10);
+
+ALTER TABLE staff
+    ADD COLUMN IF NOT EXISTS verification_pin_expires_at TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS registrants (
     id VARCHAR(20) PRIMARY KEY,
@@ -51,3 +63,9 @@ INSERT INTO staff (username, name, email, password) VALUES
     ('alice123', 'Alice Smith', 'alice.smith@example.com', 'password123'),
     ('admin', 'Admin Smith', 'admin@email.com', 'admin123')
 ON CONFLICT (username) DO NOTHING;
+
+UPDATE staff
+SET is_verified = TRUE,
+    verification_pin = NULL,
+    verification_pin_expires_at = NULL
+WHERE username IN ('alice123', 'admin');

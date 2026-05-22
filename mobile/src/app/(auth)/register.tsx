@@ -17,8 +17,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import * as authAPI from "@/services/authAPI";
 
 export default function RegisterScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -26,18 +29,43 @@ export default function RegisterScreen() {
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   const handleRegister = async () => {
+    if (!email || !username || !password || !confirmPassword) {
+      setError("Please fill in all fields");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
     setLoading(true);
+    setError("");
 
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const result = await authAPI.registerStaff({
+        email,
+        username,
+        password,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || "Registration failed");
+      }
+
       setSuccess(true);
-
-      setTimeout(() => {
-        setSuccess(false);
-      }, 2000);
-    }, 1500);
+      router.push({
+        pathname: "/(auth)/verify-account",
+        params: { username },
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -76,6 +104,8 @@ export default function RegisterScreen() {
 
           {/* Card */}
           <View style={styles.card}>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
             {/* Email */}
             <InputField
               label="Email"
@@ -160,7 +190,10 @@ export default function RegisterScreen() {
             </TouchableOpacity>
 
             {/* Bottom Link */}
-            <TouchableOpacity style={styles.bottomLink}>
+            <TouchableOpacity
+              style={styles.bottomLink}
+              onPress={() => router.push("/(auth)/verify-account")}
+            >
               <Text style={styles.bottomLinkText}>
                 Already have your code? Enter it here
               </Text>
@@ -261,6 +294,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     padding: 20,
+  },
+
+  errorText: {
+    color: "#b42318",
+    marginBottom: 12,
+    fontSize: 14,
+    fontWeight: "600",
   },
 
   header: {

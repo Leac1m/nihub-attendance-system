@@ -15,17 +15,72 @@ SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
 EMAIL_FROM = os.getenv("EMAIL_FROM", "")
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
 
 QR_CODES_DIR = Path(__file__).parent / "qr_codes"
 
 def is_configured() -> bool:
-        return bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD)
+    return bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD)
 
-print(f"EmailService configured: {is_configured()}")
-logger.debug(f"EmailService configured: {is_configured()}")
+
+def _sender_address() -> str:
+    return EMAIL_FROM or SMTP_USERNAME
+
+
 class EmailService:
     def is_configured(self) -> bool:
         return bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD)
+
+    def send_staff_verification_email(
+        self,
+        *,
+        username: str,
+        email: str,
+        verification_pin: str,
+        expires_at: str,
+    ) -> None:
+        if not self.is_configured():
+            logger.warning(
+                "SMTP not configured — skipping staff verification email for %s",
+                email,
+            )
+            return
+
+        if not ADMIN_EMAIL:
+            logger.warning(
+                "ADMIN_EMAIL not configured — skipping staff verification email for %s",
+                email,
+            )
+            return
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"NIHUB staff verification code for {username}"
+        msg["From"] = _sender_address()
+        msg["To"] = ADMIN_EMAIL
+
+        body_text = (
+            f"A new staff account was created.\n\n"
+            f"Username: {username}\n"
+            f"Email: {email}\n"
+            f"Verification PIN: {verification_pin}\n"
+            f"Expires At: {expires_at}\n"
+        )
+
+        html_body = (
+            f"<html><body style='font-family: Arial, sans-serif; color: #333;'>"
+            f"<p>A new staff account was created.</p>"
+            f"<p><strong>Username:</strong> {username}<br/>"
+            f"<strong>Email:</strong> {email}<br/>"
+            f"<strong>Verification PIN:</strong> <code style='font-size: 18px;'>{verification_pin}</code><br/>"
+            f"<strong>Expires At:</strong> {expires_at}</p>"
+            f"<p>Share this code with the staff member so they can verify their account.</p>"
+            f"</body></html>"
+        )
+
+        msg.attach(MIMEText(body_text, "plain"))
+        msg.attach(MIMEText(html_body, "html"))
+
+        self._send(msg)
 
     def send_registration_email(self, registrant: dict, qr_code_id: str) -> None:
         if not self.is_configured():
