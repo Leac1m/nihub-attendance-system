@@ -1,29 +1,27 @@
 from __future__ import annotations
 
-import json
-from pathlib import Path
+import os
 from typing import Any
 
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
-DATA_FILE = Path(__file__).parent / "data" / "data.json"
-print(f"Using data file: {DATA_FILE}")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://nihub:nihub-password@localhost:5432/nihub")
+
+
+def get_connection():
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
 
 def load_data() -> dict[str, Any]:
-    if not DATA_FILE.exists():
-        return {"courses": [], "staffs": []}
-
-    with DATA_FILE.open("r", encoding="utf-8") as file:
-        payload = json.load(file)
-
-    if "courses" not in payload or not isinstance(payload["courses"], list):
-        payload["courses"] = []
-    if "staffs" not in payload or not isinstance(payload["staffs"], list):
-        payload["staffs"] = []
-
-    return payload
+    """Load all data from PostgreSQL - used for migration compatibility."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT code, name, description, duration FROM courses")
+            courses = [dict(row) for row in cur.fetchall()]
+            return {"courses": courses, "staffs": []}
 
 
 def save_data(data: dict[str, Any]) -> None:
-    with DATA_FILE.open("w", encoding="utf-8") as file:
-        json.dump(data, file, indent=2)
+    """Save data to PostgreSQL - used for migration compatibility."""
+    pass  # Data is managed by individual service functions

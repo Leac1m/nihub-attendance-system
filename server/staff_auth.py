@@ -8,7 +8,7 @@ import jwt
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 
-from db import load_data
+from db import get_connection
 
 
 class StaffAuthError(Exception):
@@ -22,18 +22,24 @@ class StaffNotFoundError(StaffAuthError):
 class InvalidCredentialsError(StaffAuthError):
     pass
 
+
 @dataclass
 class StaffAuthService:
     secret_key: str
     algorithm: str = "HS256"
     access_token_minutes: int = 60
 
-    def _load_data(self) -> dict[str, Any]:
-        return load_data()
-
     def find_staff_by_username(self, username: str) -> dict[str, Any] | None:
-        data = self._load_data()
-        return next((s for s in data["staffs"] if s.get("username") == username), None)
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT username, name, email, password FROM staff WHERE username = %s",
+                    (username,),
+                )
+                row = cur.fetchone()
+                if row:
+                    return dict(row)
+                return None
 
     def authenticate(self, username: str, password: str) -> dict[str, Any]:
         staff = self.find_staff_by_username(username)

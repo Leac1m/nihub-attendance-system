@@ -27,8 +27,13 @@ dist/
 .idea/
 .DS_Store
 
+# Generated at runtime (now persisted via Docker volumes)
 qr_codes/
 uploads/
 
+# Kilo
 .kilo/
 .env
+
+# Server data (replaced by PostgreSQL)
+server/data/
