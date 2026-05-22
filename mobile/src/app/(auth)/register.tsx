@@ -70,10 +70,10 @@ export default function RegisterScreen() {
 
   return (
     <LinearGradient
-      colors={["#f8f9fa", "#f3f4f5", "#ffffff"]}
+      colors={["#F8EDFF", "#FDFDFF", "#FFFFFF"]}
       style={styles.container}
     >
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" backgroundColor="#F8EDFF" />
 
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
