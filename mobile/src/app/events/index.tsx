@@ -332,9 +332,6 @@ export default function EventsScreen() {
             {/* Screen Title */}
             <Text style={styles.screenTitle}>Events</Text>
 
-            {/* Hint */}
-            <Text style={styles.swipeHint}>← Swipe left on a card to delete</Text>
-
             {/* Search */}
             <View style={styles.searchContainer}>
               <Icon

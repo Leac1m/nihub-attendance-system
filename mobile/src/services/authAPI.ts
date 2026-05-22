@@ -1,5 +1,5 @@
 import { API_BASE_URL, API_ENDPOINTS } from "@/config/api";
-import { Platform } from "react-native";
+
 import {
   apiRequest,
   setStoredToken,
@@ -264,8 +264,12 @@ export async function markAttendance(
 
 /**
  * Download the attendance spreadsheet for a given course as an XLSX file.
- * Fetches the binary blob, saves it to the app's document directory,
- * then opens the native share sheet so the user can open / share the file.
+ *
+ * Web:    triggers a browser <a download> save.
+ * Native: uses expo-file-system/legacy `FileSystem.downloadAsync` (which
+ *         supports auth headers) then hands the file to `expo-sharing` so
+ *         the OS shows its "Open with / Share" sheet — the user can open
+ *         it in any installed spreadsheet app.
  */
 export async function downloadCourseAttendanceSpreadsheet(
   courseCode: string,
@@ -278,33 +282,29 @@ export async function downloadCourseAttendanceSpreadsheet(
 
     const url = `${API_BASE_URL}${API_ENDPOINTS.DOWNLOAD_ATTENDANCE_SPREADSHEET(courseCode)}`;
     const filename = `${courseCode}_attendance.xlsx`;
-
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept:
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      },
-    });
-
-    if (!response.ok) {
-      let message = `HTTP ${response.status}`;
-      try {
-        const body = await response.json();
-        if (body?.detail) message = body.detail;
-      } catch {
-        /* response body was not JSON — keep status message */
-      }
-      return { success: false, error: message };
-    }
+    const XLSX_MIME =
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     const isWeb =
       typeof globalThis !== "undefined" &&
       (globalThis as any)?.URL?.createObjectURL &&
       typeof (globalThis as any).document !== "undefined";
 
-    // ── Web / Expo Web: use <a download> so the browser saves the file ──────
+    // ── Web: fetch normally and trigger a browser download ───────────────────
     if (isWeb) {
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}`, Accept: XLSX_MIME },
+      });
+
+      if (!response.ok) {
+        let message = `HTTP ${response.status}`;
+        try {
+          const body = await response.json();
+          if (body?.detail) message = body.detail;
+        } catch { /* keep status message */ }
+        return { success: false, error: message };
+      }
+
       const blob = await response.blob();
       const href = (globalThis as any).URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -317,35 +317,46 @@ export async function downloadCourseAttendanceSpreadsheet(
       return { success: true };
     }
 
-    // ── Expo Go / native: save the file locally in Documents ───────────────
-    const { File, Paths } = await import("expo-file-system");
-    const file = new File(Paths.document, filename);
+    // ── Native (Android / iOS) ────────────────────────────────────────────────
+    // expo-file-system/legacy provides cacheDirectory as a plain string and
+    // downloadAsync supports custom request headers.
+    const FileSystem = await import("expo-file-system/legacy");
 
-    if (file.exists) {
-      file.delete();
+    const cacheDir = FileSystem.cacheDirectory;
+    if (!cacheDir) {
+      return { success: false, error: "Cache directory is unavailable on this device." };
     }
 
-    const arrayBuffer = await response.arrayBuffer();
-    file.write(new Uint8Array(arrayBuffer));
+    const fileUri = cacheDir + filename;
 
-    if (Platform.OS === "android") {
-      const { getContentUriAsync } = await import("expo-file-system/legacy");
-      const IntentLauncher = await import("expo-intent-launcher");
-      const contentUri = await getContentUriAsync(file.uri);
-      await IntentLauncher.startActivityAsync("android.intent.action.VIEW", {
-        data: contentUri,
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        flags: 1,
+    // Remove stale copy so a fresh download always wins.
+    const info = await FileSystem.getInfoAsync(fileUri);
+    if (info.exists) {
+      await FileSystem.deleteAsync(fileUri, { idempotent: true });
+    }
+
+    const result = await FileSystem.downloadAsync(url, fileUri, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: XLSX_MIME,
+      },
+    });
+
+    // downloadAsync returns the local URI on success.
+    if (!result?.uri) {
+      return { success: false, error: "Download failed — no file URI returned." };
+    }
+
+    // expo-sharing opens the OS share/open-with sheet on both platforms.
+    const Sharing = await import("expo-sharing");
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(result.uri, {
+        mimeType: XLSX_MIME,
+        dialogTitle: "Open attendance spreadsheet",
+        UTI: "com.microsoft.excel.xlsx", // iOS hint
       });
     } else {
-      const Sharing = await import("expo-sharing");
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(file.uri, {
-          mimeType:
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          dialogTitle: "Open attendance spreadsheet",
-        });
-      }
+      return { success: false, error: "Sharing is not available on this device." };
     }
 
     return { success: true };
@@ -353,6 +364,8 @@ export async function downloadCourseAttendanceSpreadsheet(
     return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
+
+
 
 
 /**
