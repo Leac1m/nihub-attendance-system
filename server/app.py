@@ -20,6 +20,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from course_service import (
     AttendanceAlreadyMarkedError,
+    CourseAlreadyExistsError,
     CourseNotFoundError,
     CourseService,
     RegistrantExistsError,
@@ -138,6 +139,30 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+class CourseCreate(BaseModel):
+    code: str
+    name: str
+    description: str = ""
+    duration: str = ""
+
+
+@app.post("/courses", status_code=201)
+async def create_course(
+    payload: CourseCreate,
+    staff: StaffPublic = Depends(get_current_staff),
+):
+    try:
+        course = service.create_course(
+            code=payload.code.strip().upper(),
+            name=payload.name.strip(),
+            description=payload.description.strip(),
+            duration=payload.duration.strip(),
+        )
+        return {"message": "Event created", "course": course}
+    except CourseAlreadyExistsError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/courses")

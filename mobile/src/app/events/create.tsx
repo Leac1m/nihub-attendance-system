@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -7,16 +7,74 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialIcons as Icon } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { Picker } from "@react-native-picker/picker";
+import { createCourse } from "@/services/authAPI";
 
 export default function CreateEventScreen() {
+  const router = useRouter();
+
   const [courseName, setCourseName] = useState("");
   const [courseCode, setCourseCode] = useState("");
   const [description, setDescription] = useState("");
   const [durationValue, setDurationValue] = useState("");
   const [durationUnit, setDurationUnit] = useState("days");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const handleBack = useCallback(() => {
+    router.replace("/events");
+  }, [router]);
+
+  const validate = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!courseName.trim()) errors.courseName = "Course name is required.";
+    if (!courseCode.trim()) errors.courseCode = "Course code is required.";
+    if (!durationValue.trim() || isNaN(Number(durationValue)) || Number(durationValue) <= 0) {
+      errors.durationValue = "Enter a valid duration number.";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = useCallback(async () => {
+    if (!validate()) return;
+
+    setIsSubmitting(true);
+    setFieldErrors({});
+
+    const duration = `${durationValue.trim()} ${durationUnit}`;
+
+    const result = await createCourse({
+      code: courseCode.trim().toUpperCase(),
+      name: courseName.trim(),
+      description: description.trim(),
+      duration,
+    });
+
+    setIsSubmitting(false);
+
+    if (!result.success) {
+      Alert.alert(
+        "Could not create event",
+        result.error ?? "An unexpected error occurred. Please try again.",
+      );
+      return;
+    }
+
+    Alert.alert(
+      "Event created",
+      `"${courseName.trim()}" has been added to the schedule.`,
+      [{ text: "OK", onPress: () => router.replace("/events") }],
+    );
+  }, [courseName, courseCode, description, durationValue, durationUnit, router]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -25,8 +83,14 @@ export default function CreateEventScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity activeOpacity={0.8} style={styles.backButton}>
-            <Text style={styles.backButtonText}>←</Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.backButton}
+            onPress={handleBack}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Icon name="arrow-back" size={24} color="#70008B" />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>Create New Event</Text>
@@ -37,6 +101,7 @@ export default function CreateEventScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.card}>
           <Text style={styles.subtitle}>
@@ -49,30 +114,45 @@ export default function CreateEventScreen() {
             <View style={styles.field}>
               <Text style={styles.label}>Course Name</Text>
 
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, fieldErrors.courseName ? styles.inputError : null]}>
                 <TextInput
                   value={courseName}
-                  onChangeText={setCourseName}
+                  onChangeText={(v) => {
+                    setCourseName(v);
+                    if (fieldErrors.courseName) setFieldErrors((e) => ({ ...e, courseName: "" }));
+                  }}
                   placeholder="e.g. Advanced UI Design"
                   placeholderTextColor="#A09AA1"
                   style={styles.input}
+                  returnKeyType="next"
                 />
               </View>
+              {fieldErrors.courseName ? (
+                <Text style={styles.errorText}>{fieldErrors.courseName}</Text>
+              ) : null}
             </View>
 
             {/* Course Code */}
             <View style={styles.field}>
               <Text style={styles.label}>Course Code</Text>
 
-              <View style={styles.inputWrapper}>
+              <View style={[styles.inputWrapper, fieldErrors.courseCode ? styles.inputError : null]}>
                 <TextInput
                   value={courseCode}
-                  onChangeText={setCourseCode}
+                  onChangeText={(v) => {
+                    setCourseCode(v.toUpperCase());
+                    if (fieldErrors.courseCode) setFieldErrors((e) => ({ ...e, courseCode: "" }));
+                  }}
                   placeholder="e.g. DES-401"
                   placeholderTextColor="#A09AA1"
                   style={styles.input}
+                  autoCapitalize="characters"
+                  returnKeyType="next"
                 />
               </View>
+              {fieldErrors.courseCode ? (
+                <Text style={styles.errorText}>{fieldErrors.courseCode}</Text>
+              ) : null}
             </View>
 
             {/* Description */}
@@ -96,14 +176,23 @@ export default function CreateEventScreen() {
               <Text style={styles.label}>Duration</Text>
 
               <View style={styles.durationRow}>
-                <TextInput
-                  value={durationValue}
-                  onChangeText={setDurationValue}
-                  placeholder="0"
-                  placeholderTextColor="#A09AA1"
-                  keyboardType="numeric"
-                  style={[styles.input, styles.durationValueInput]}
-                />
+                <View style={[
+                  styles.inputWrapper,
+                  styles.durationValueWrapper,
+                  fieldErrors.durationValue ? styles.inputError : null,
+                ]}>
+                  <TextInput
+                    value={durationValue}
+                    onChangeText={(v) => {
+                      setDurationValue(v);
+                      if (fieldErrors.durationValue) setFieldErrors((e) => ({ ...e, durationValue: "" }));
+                    }}
+                    placeholder="0"
+                    placeholderTextColor="#A09AA1"
+                    keyboardType="numeric"
+                    style={styles.input}
+                  />
+                </View>
 
                 <View style={styles.durationUnitSelect}>
                   <Picker
@@ -118,11 +207,26 @@ export default function CreateEventScreen() {
                   </Picker>
                 </View>
               </View>
+              {fieldErrors.durationValue ? (
+                <Text style={styles.errorText}>{fieldErrors.durationValue}</Text>
+              ) : null}
             </View>
 
             {/* Submit Button */}
-            <TouchableOpacity activeOpacity={0.9} style={styles.button}>
-              <Text style={styles.buttonText}>Create Event</Text>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              style={[styles.button, isSubmitting && styles.buttonDisabled]}
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+              accessibilityRole="button"
+              accessibilityLabel="Create event"
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
+              ) : null}
+              <Text style={styles.buttonText}>
+                {isSubmitting ? "Creating…" : "Create Event"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -160,13 +264,7 @@ const styles = StyleSheet.create({
 
   backButton: {
     marginRight: 12,
-  },
-
-  backButtonText: {
-    fontSize: 24,
-    lineHeight: 24,
-    color: "#70008B",
-    fontWeight: "700",
+    padding: 4,
   },
 
   headerTitle: {
@@ -226,11 +324,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
 
+  inputError: {
+    borderColor: "#BA1A1A",
+  },
+
   input: {
     fontSize: 16,
     color: "#191C1D",
     paddingHorizontal: 16,
     paddingVertical: 16,
+  },
+
+  errorText: {
+    fontSize: 12,
+    color: "#BA1A1A",
+    fontWeight: "600",
+    marginTop: 4,
   },
 
   textArea: {
@@ -252,7 +361,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  durationValueInput: {
+  durationValueWrapper: {
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
@@ -293,6 +402,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 5,
+  },
+
+  buttonDisabled: {
+    opacity: 0.65,
   },
 
   buttonText: {

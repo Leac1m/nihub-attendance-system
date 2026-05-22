@@ -22,7 +22,7 @@ QR_CODES_DIR = Path(__file__).parent / "qr_codes"
 def is_configured() -> bool:
     return bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD)
 
-
+print(f"SMTP Configuration: {SMTP_HOST}:{SMTP_PORT}", "is configured" if is_configured() else "is NOT configured")
 def _sender_address() -> str:
     return EMAIL_FROM or SMTP_USERNAME
 

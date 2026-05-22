@@ -25,9 +25,26 @@ class AttendanceAlreadyMarkedError(Exception):
     pass
 
 
+class CourseAlreadyExistsError(Exception):
+    pass
+
+
 class CourseService:
     def _get_connection(self):
         return get_connection()
+
+    def create_course(self, code: str, name: str, description: str, duration: str) -> dict:
+        with self._get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT code FROM courses WHERE code = %s", (code,))
+                if cur.fetchone():
+                    raise CourseAlreadyExistsError(f"A course with code '{code}' already exists")
+                cur.execute(
+                    "INSERT INTO courses (code, name, description, duration) VALUES (%s, %s, %s, %s)",
+                    (code, name, description, duration),
+                )
+                conn.commit()
+        return {"code": code, "name": name, "description": description, "duration": duration}
 
     def list_courses(self) -> list[dict[str, Any]]:
         with self._get_connection() as conn:

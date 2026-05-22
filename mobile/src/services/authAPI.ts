@@ -166,6 +166,29 @@ export async function getCourses(): Promise<ApiResponse<CourseResponse>> {
 }
 
 /**
+ * Create a new course / event. Requires staff authentication.
+ */
+export interface CreateCoursePayload {
+  code: string;
+  name: string;
+  description: string;
+  duration: string;
+}
+
+export async function createCourse(
+  payload: CreateCoursePayload
+): Promise<ApiResponse<{ message: string; course: Course }>> {
+  return apiRequest<{ message: string; course: Course }>(
+    API_ENDPOINTS.CREATE_COURSE,
+    {
+      method: "POST",
+      requiresAuth: true,
+      body: payload,
+    }
+  );
+}
+
+/**
  * Get registrants for a specific course
  */
 export async function getRegistrants(

@@ -34,6 +34,7 @@ export const API_ENDPOINTS = {
   REGISTER_STAFF: "/auth/register",
   VERIFY_STAFF_ACCOUNT: "/auth/verify-account",
   GET_COURSES: "/courses",
+  CREATE_COURSE: "/courses",
   GET_REGISTRANTS: (courseCode: string) =>
     `/courses/${courseCode}/registrants`,
   GET_REGISTRANT: (courseCode: string, registrantId: string) =>
