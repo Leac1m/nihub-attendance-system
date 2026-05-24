@@ -176,6 +176,27 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
     }
   };
 
+  const handleBack = () => {
+    // Stop the camera stream if active
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
+      videoRef.current.style.display = 'none';
+    }
+    setIsCameraActive(false);
+
+    // Reset step 2 state
+    setPhotoPreview(null);
+    setPhotoFile(null);
+    setErrors((prev) => {
+      const { photo, ...rest } = prev;
+      return rest;
+    });
+
+    setStep(1);
+  };
+
   const handleSubmit = async () => {
     if (!photoPreview) {
       setErrors({ photo: 'Please capture or upload a photo' });
@@ -396,20 +417,28 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
                 />
                 <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-                <div className="photo-placeholder">
-                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.83 8 9 8 7.5 8.67 7.5 9.5 8.17 11 9 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <p>No photo selected</p>
-                </div>
+                {!isCameraActive && (
+                  <div className="photo-placeholder">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.83 8 9 8 7.5 8.67 7.5 9.5 8.17 11 9 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                    <p>No photo selected</p>
+                  </div>
+                )}
 
                 <div className="photo-buttons">
-                  <button className="btn btn-secondary" onClick={handleCameraCapture}>
-                    Capture from Camera
-                  </button>
+                  {isCameraActive ? (
+                    <button className="btn btn-primary" onClick={handleCapture}>
+                      Capture Photo
+                    </button>
+                  ) : (
+                    <button className="btn btn-secondary" onClick={handleCameraCapture}>
+                      Capture from Camera
+                    </button>
+                  )}
                   <button
                     className="btn btn-secondary"
                     onClick={() => fileInputRef.current?.click()}
@@ -425,19 +454,13 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
                     style={{ display: 'none' }}
                   />
                 </div>
-
-                {isCameraActive && (
-                  <button className="btn btn-primary" onClick={handleCapture}>
-                    📸 Capture Photo
-                  </button>
-                )}
               </div>
             )}
 
             {errors.photo && <span className="form-error">{errors.photo}</span>}
 
             <div className="form-actions">
-              <button className="btn btn-secondary" onClick={() => setStep(1)} disabled={isLoading}>
+              <button className="btn btn-secondary" onClick={handleBack} disabled={isLoading}>
                 Back
               </button>
               <button
