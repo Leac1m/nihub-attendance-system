@@ -12,18 +12,6 @@ export interface CourseOption {
 
 export interface RegistrationResponse {
   message: string;
-  registrant: {
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    matriculation_number: string;
-    qr_code_url: string;
-    attendance_days?: Array<{
-      date: string;
-      present: boolean;
-    }>;
-  };
 }
 
 /**
@@ -33,7 +21,7 @@ export async function registerAttendee(
   courseCode: string,
   data: RegistrantData,
   imageFile?: File
-): Promise<RegistrationResponse> {
+): Promise<void> {
   const formData = new FormData();
   formData.append('name', data.name);
   formData.append('email', data.email);
@@ -56,8 +44,6 @@ export async function registerAttendee(
     const error = await response.json();
     throw new Error(error.detail || 'Registration failed');
   }
-
-  return response.json();
 }
 
 /**

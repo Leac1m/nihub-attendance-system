@@ -273,14 +273,8 @@ async def register_for_course(
                 exc,
             )
 
-        # Return only safe public fields — do not echo personal data back
-        return {
-            "message": "Registration saved",
-            "registrant": {
-                "id": created["id"],
-                "qr_code_url": created.get("qr_code_url"),
-            },
-        }
+        # Return only a success message — no personal data echoed back
+        return {"message": "Registration saved"}
     except CourseNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except RegistrantExistsError as e:

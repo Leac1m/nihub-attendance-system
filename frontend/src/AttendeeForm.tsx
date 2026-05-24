@@ -186,7 +186,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
     setSubmitError(null);
 
     try {
-      const response = await registerAttendee(
+      await registerAttendee(
         selectedCourseCode,
         {
           name: formData.name,
@@ -198,7 +198,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
       );
 
       setSuccessMessage(
-        `Welcome ${formData.name}! You have been registered successfully. Your ID is ${response.registrant.id}`
+        `Welcome ${formData.name}! You have been successfully registered.`
       );
 
       // Reset form after 3 seconds
@@ -216,7 +216,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
         setSuccessMessage(null);
 
         if (onSuccess) {
-          onSuccess(response.registrant.id);
+          onSuccess('');
         }
       }, 3000);
     } catch (error) {
