@@ -12,7 +12,7 @@ import {
 import { Image } from "react-native";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { getRegistrant, Registrant } from "@/services/authAPI";
+import { getRegistrant, markAttendance, Registrant } from "@/services/authAPI";
 import { API_BASE_URL } from "@/config/api";
 
 export default function AttendeeVerificationScreen() {
@@ -57,9 +57,23 @@ export default function AttendeeVerificationScreen() {
     };
   }, [attendeeId, eventId]);
 
-  const handleAccept = () => {
-    // Navigate back to events list
-    router.push("/events");
+  const handleAccept = async () => {
+    if (!eventId || !attendee || Array.isArray(eventId)) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const result = await markAttendance(eventId, attendee.matriculation_number, todayStr, true);
+
+    if (!result.success) {
+      setError(result.error || "Failed to record attendance");
+      setIsLoading(false);
+      return;
+    }
+
+    // Successfully marked attendance, return to working scanner screen
+    router.back();
   };
 
   const handleDeny = () => {

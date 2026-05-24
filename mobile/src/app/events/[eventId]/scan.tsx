@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { MaterialIcons as Icon } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
 import {
   getScanContext,
   Course,
@@ -95,9 +95,14 @@ export default function QRScannerScreen() {
 
   const currentAttendee = useMemo(() => registrants[0] ?? null, [registrants]);
 
+  const navigation = useNavigation();
+
   useEffect(() => {
-    setHasScanned(false);
-  }, [eventId]);
+    const unsubscribe = navigation.addListener("focus", () => {
+      setHasScanned(false);
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const handleBarcodeScanned = ({ type, data }: { type: string; data: string }) => {
     if (hasScanned || type !== "qr") {
