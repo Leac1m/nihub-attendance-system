@@ -31,6 +31,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -138,6 +139,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
         videoRef.current.srcObject = stream;
         videoRef.current.style.display = 'block';
       }
+      setIsCameraActive(true);
     } catch (error) {
       console.error('Error accessing camera:', error);
       alert('Unable to access camera. Please check permissions.');
@@ -169,6 +171,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach((track) => track.stop());
         videoRef.current.style.display = 'none';
+        setIsCameraActive(false);
       }
     }
   };
@@ -417,12 +420,13 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     onChange={handleFileChange}
                     style={{ display: 'none' }}
                   />
                 </div>
 
-                {videoRef.current?.srcObject && (
+                {isCameraActive && (
                   <button className="btn btn-primary" onClick={handleCapture}>
                     📸 Capture Photo
                   </button>

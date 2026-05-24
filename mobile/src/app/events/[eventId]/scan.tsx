@@ -207,14 +207,6 @@ export default function QRScannerScreen() {
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        {/* Flash Button */}
-        <TouchableOpacity
-          activeOpacity={0.9}
-          style={styles.flashButton}
-        >
-          <Icon name="flashlight-on" size={28} color="#FFFFFF" />
-        </TouchableOpacity>
-
         {/* Instructions */}
         <View style={styles.instructionsContainer}>
           <Text style={styles.instructions}>

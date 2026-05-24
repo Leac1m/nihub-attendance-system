@@ -78,11 +78,13 @@ export default function RegisterScreen() {
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           style={{ flex: 1, width: "100%" }}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "android" ? 0 : 0}
         >
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {/* Header */}
           <View style={styles.header}>
@@ -377,7 +379,7 @@ const styles = StyleSheet.create({
 
   inputFocused: {
     borderColor: "#70008b",
-    transform: [{ scale: 1.01 }],
+    borderWidth: 2,
   },
 
   inputIcon: {

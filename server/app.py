@@ -257,9 +257,15 @@ async def register_for_course(
         
         created = service.register(course_code, registrant_data)
 
+        # Fetch course info to include in registration email
+        try:
+            course_info = service._get_course(course_code)
+        except CourseNotFoundError:
+            course_info = None
+
         # Fire-and-forget: send registration email with QR code
         try:
-            email_service.send_registration_email(created, created["id"])
+            email_service.send_registration_email(created, created["id"], course=course_info)
         except Exception as exc:
             logging.getLogger(__name__).warning(
                 "Failed to send registration email to %s: %s",
@@ -267,7 +273,14 @@ async def register_for_course(
                 exc,
             )
 
-        return {"message": "Registration saved", "registrant": created}
+        # Return only safe public fields — do not echo personal data back
+        return {
+            "message": "Registration saved",
+            "registrant": {
+                "id": created["id"],
+                "qr_code_url": created.get("qr_code_url"),
+            },
+        }
     except CourseNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except RegistrantExistsError as e:
