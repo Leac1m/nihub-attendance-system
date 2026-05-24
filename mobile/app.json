@@ -9,7 +9,8 @@
     "scheme": "nihubattendanceapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.leac1m.nihubattendanceapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -47,11 +48,25 @@
             "imageWidth": 76
           }
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a5e86182-dadd-40ca-8213-0208ab3c525b"
+      }
     }
   }
 }

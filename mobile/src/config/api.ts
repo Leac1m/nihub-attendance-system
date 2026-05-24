@@ -12,19 +12,19 @@ export function getApiBaseUrl(): string {
     // 10.0.2.2 only works inside the Android emulator
     if (Device.isDevice) {
       // Physical Android phone: reach the host on the LAN
-      return "http://10.1.1.240:8000";
+      return "http://192.168.254.164:8000";
     }
     return "http://10.0.2.2:8000";
   }
   if (Platform.OS === "ios") {
     // Physical iOS device → use host LAN IP; simulator → localhost
-    return Device.isDevice ? "http://10.1.1.240:8000" : "http://localhost:8000";
+    return Device.isDevice ? "http://192.168.254.164:8000" : "http://localhost:8000";
   }
   // Web
   return "http://localhost:8000";
 }
 
-export const API_BASE_URL = getApiBaseUrl();
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || getApiBaseUrl();
 
 /**
  * Available API endpoints

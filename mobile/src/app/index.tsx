@@ -1,20 +1,26 @@
 import React, { useEffect } from "react";
-import { ActivityIndicator, SafeAreaView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "/home/michael/projects/nihub-attendance-system/mobile/src/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Index() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isRestoring } = useAuth();
 
   useEffect(() => {
+    // Only redirect after auth state has been restored
+    if (isRestoring) {
+        return;
+    }
+
     // Redirect based on auth state
     if (isAuthenticated) {
       router.replace("/events");
     } else {
       router.replace("/(auth)/signin");
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isRestoring]);
 
   return (
     <SafeAreaView style={styles.container}>
