@@ -49,9 +49,6 @@ app = FastAPI()
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-# Create qr_codes directory if it doesn't exist
-QR_DIR = Path("qr_codes")
-QR_DIR.mkdir(exist_ok=True)
 
 # Add CORS middleware to allow requests from mobile app
 app.add_middleware(
@@ -73,8 +70,6 @@ app.add_middleware(
 # Serve uploaded files as static files
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# Serve QR code images as static files
-app.mount("/qr_codes", StaticFiles(directory="qr_codes"), name="qr_codes")
 
 service = CourseService()
 auth_service = StaffAuthService(secret_key=os.getenv("JWT_SECRET", "dev-secret-change-me"))
@@ -268,7 +263,7 @@ async def register_for_course(
 
         # Fire-and-forget: send registration email with QR code
         try:
-            email_service.send_registration_email(created, created["id"], course=course_info)
+            email_service.send_registration_email(created, created.get("qr_bytes", b""), course=course_info)
         except Exception as exc:
             logging.getLogger(__name__).warning(
                 "Failed to send registration email to %s: %s",

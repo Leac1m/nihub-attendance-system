@@ -5,11 +5,8 @@ import ssl
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
-
-QR_CODES_DIR = Path(__file__).parent / "qr_codes"
 
 
 def _get_config() -> dict:
@@ -98,7 +95,7 @@ class EmailService:
         self._send(msg)
 
     def send_registration_email(
-        self, registrant: dict, qr_code_id: str, *, course: dict | None = None
+        self, registrant: dict, qr_bytes: bytes, *, course: dict | None = None
     ) -> None:
         if not self.is_configured():
             logger.warning(
@@ -175,17 +172,13 @@ class EmailService:
         alternative.attach(MIMEText(html_body, "html"))
         msg.attach(alternative)
 
-        qr_image_path = QR_CODES_DIR / f"{qr_code_id}.png"
-
-        if qr_image_path.exists():
-            with qr_image_path.open("rb") as fh:
-                qr_inline = MIMEImage(fh.read(), name=qr_image_path.name)
-            qr_inline.add_header("Content-Disposition", "inline", filename=qr_image_path.name)
+        if qr_bytes:
+            qr_inline = MIMEImage(qr_bytes, name="qr_code.png")
+            qr_inline.add_header("Content-Disposition", "inline", filename="qr_code.png")
             qr_inline.add_header("Content-ID", "<qr_code>")
             msg.attach(qr_inline)
 
-            with qr_image_path.open("rb") as fh:
-                qr_attach = MIMEImage(fh.read(), name=qr_image_path.name)
+            qr_attach = MIMEImage(qr_bytes, name="qr_code.png")
             qr_attach.add_header(
                 "Content-Disposition",
                 "attachment",
@@ -193,7 +186,7 @@ class EmailService:
             )
             msg.attach(qr_attach)
         else:
-            logger.warning("QR code image not found at %s", qr_image_path)
+            logger.warning("No QR code bytes available for registrant %s", m_id)
 
         self._send(msg)
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import io
 from datetime import date
-from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -125,11 +125,11 @@ class CourseService:
                 )
                 conn.commit()
 
-        qr_path = self._generate_qr_code(new_id)
+        qr_bytes = self._generate_qr_bytes(new_id)
         return {
             "id": new_id,
             **registrant,
-            "qr_code_url": f"/qr_codes/{Path(qr_path).name}",
+            "qr_bytes": qr_bytes,
             "attendance_days": [],
         }
 
@@ -196,12 +196,11 @@ class CourseService:
                 cur.execute("DELETE FROM courses WHERE code = %s", (course_code,))
                 conn.commit()
 
-    def _generate_qr_code(self, registrant_id: str) -> str:
-        qr_dir = Path(__file__).parent / "qr_codes"
-        qr_dir.mkdir(exist_ok=True)
-        qr_path = qr_dir / f"{registrant_id}.png"
-        qrcode.make(registrant_id).save(str(qr_path))
-        return str(qr_path)
+    def _generate_qr_bytes(self, registrant_id: str) -> bytes:
+        """Generate a QR code image in memory and return the PNG bytes."""
+        buf = io.BytesIO()
+        qrcode.make(registrant_id).save(buf, format="PNG")
+        return buf.getvalue()
 
     def get_attendance_spreadsheet(self, course_code: str) -> list[dict[str, Any]]:
         with self._get_connection() as conn:
