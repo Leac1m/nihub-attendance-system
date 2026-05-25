@@ -372,6 +372,19 @@ export async function downloadCourseAttendanceSpreadsheet(
       return { success: false, error: "Download failed — no file URI returned." };
     }
 
+    if (result.status !== 200) {
+      // The API returned an error (e.g., 401, 404), so the downloaded file is actually an error message (JSON/Text).
+      const errorText = await FileSystem.readAsStringAsync(result.uri);
+      let errorMessage = `HTTP ${result.status}`;
+      try {
+        const parsed = JSON.parse(errorText);
+        if (parsed.detail) errorMessage = parsed.detail;
+      } catch (e) {
+        // If not JSON, use the raw text or fallback to status
+      }
+      return { success: false, error: `Download failed: ${errorMessage}` };
+    }
+
     // ── Native (Android Only) ────────────────────────────────────────────────
     const SAF = FileSystem.StorageAccessFramework;
     let directoryUri = await AsyncStorage.getItem("download_directory_uri");

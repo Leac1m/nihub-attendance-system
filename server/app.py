@@ -17,7 +17,7 @@ load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 from fastapi import FastAPI, HTTPException, Depends, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel, EmailStr
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -455,8 +455,8 @@ async def get_attendance_spreadsheet(
         buf.seek(0)
 
         safe_code = course_code.replace("/", "_")
-        return StreamingResponse(
-            buf,
+        return Response(
+            content=buf.getvalue(),
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={
                 "Content-Disposition": f'attachment; filename="{safe_code}_attendance.xlsx"',
