@@ -1,3 +1,5 @@
+import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL, API_ENDPOINTS } from "@/config/api";
 
 import {
@@ -370,19 +372,50 @@ export async function downloadCourseAttendanceSpreadsheet(
       return { success: false, error: "Download failed — no file URI returned." };
     }
 
-    // expo-sharing opens the OS share/open-with sheet on both platforms.
-    const Sharing = await import("expo-sharing");
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(result.uri, {
-        mimeType: XLSX_MIME,
-        dialogTitle: "Open attendance spreadsheet",
-        UTI: "com.microsoft.excel.xlsx", // iOS hint
-      });
-    } else {
-      return { success: false, error: "Sharing is not available on this device." };
+    // ── Native (Android Only) ────────────────────────────────────────────────
+    const SAF = FileSystem.StorageAccessFramework;
+    let directoryUri = await AsyncStorage.getItem("download_directory_uri");
+
+    if (!directoryUri) {
+      // Request permission starting from the Downloads folder
+      const downloadDir = SAF.getUriForDirectoryInRoot("Download");
+      const permissions = await SAF.requestDirectoryPermissionsAsync(downloadDir);
+
+      if (permissions.granted) {
+        directoryUri = permissions.directoryUri;
+        await AsyncStorage.setItem("download_directory_uri", directoryUri);
+      } else {
+        return { success: false, error: "Directory permission denied." };
+      }
     }
 
-    return { success: true };
+    try {
+      const safUri = await SAF.createFileAsync(directoryUri, filename, XLSX_MIME);
+      
+      // Read the downloaded file from cache as Base64 and write it via SAF
+      const base64Data = await FileSystem.readAsStringAsync(result.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      
+      await FileSystem.writeAsStringAsync(safUri, base64Data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Launch the default system app to view it
+      const IntentLauncher = await import("expo-intent-launcher");
+      await IntentLauncher.startActivityAsync("android.intent.action.VIEW", {
+        data: safUri,
+        flags: 1, // FLAG_GRANT_READ_URI_PERMISSION
+        type: XLSX_MIME,
+      });
+      
+      return { success: true };
+    } catch (e) {
+      // If saving fails, the permission might have been revoked or folder deleted.
+      // Clear the saved URI so we can prompt again next time.
+      await AsyncStorage.removeItem("download_directory_uri");
+      return { success: false, error: "Failed to save the file to Downloads. Please try again." };
+    }
   } catch (err: unknown) {
     return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
   }
