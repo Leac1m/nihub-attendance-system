@@ -31,10 +31,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isCameraActive, setIsCameraActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -132,60 +129,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
     }
   };
 
-  const handleCameraCapture = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.style.display = 'block';
-      }
-      setIsCameraActive(true);
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      alert('Unable to access camera. Please check permissions.');
-    }
-  };
-
-  const handleCapture = () => {
-    if (canvasRef.current && videoRef.current) {
-      const context = canvasRef.current.getContext('2d');
-      if (context) {
-        canvasRef.current.width = videoRef.current.videoWidth;
-        canvasRef.current.height = videoRef.current.videoHeight;
-        context.drawImage(videoRef.current, 0, 0);
-        
-        const imageUrl = canvasRef.current.toDataURL('image/jpeg');
-        setPhotoPreview(imageUrl);
-        
-        // Convert canvas to blob and create File object
-        canvasRef.current.toBlob((blob) => {
-          if (blob) {
-            const file = new File([blob], `photo-${Date.now()}.jpg`, {
-              type: 'image/jpeg',
-            });
-            setPhotoFile(file);
-          }
-        }, 'image/jpeg');
-        
-        // Stop the video stream
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach((track) => track.stop());
-        videoRef.current.style.display = 'none';
-        setIsCameraActive(false);
-      }
-    }
-  };
-
   const handleBack = () => {
-    // Stop the camera stream if active
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
-      videoRef.current.srcObject = null;
-      videoRef.current.style.display = 'none';
-    }
-    setIsCameraActive(false);
-
     // Reset step 2 state
     setPhotoPreview(null);
     setPhotoFile(null);
@@ -409,38 +353,19 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
               </div>
             ) : (
               <div className="photo-capture-container">
-                <video
-                  ref={videoRef}
-                  style={{ display: 'none', width: '100%' }}
-                  autoPlay
-                  playsInline
-                />
-                <canvas ref={canvasRef} style={{ display: 'none' }} />
-
-                {!isCameraActive && (
-                  <div className="photo-placeholder">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.83 8 9 8 7.5 8.67 7.5 9.5 8.17 11 9 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"
-                        fill="currentColor"
-                      />
-                    </svg>
-                    <p>No photo selected</p>
-                  </div>
-                )}
+                <div className="photo-placeholder">
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.83 8 9 8 7.5 8.67 7.5 9.5 8.17 11 9 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <p>No photo selected</p>
+                </div>
 
                 <div className="photo-buttons">
-                  {isCameraActive ? (
-                    <button className="btn btn-primary" onClick={handleCapture}>
-                      Capture Photo
-                    </button>
-                  ) : (
-                    <button className="btn btn-secondary" onClick={handleCameraCapture}>
-                      Capture from Camera
-                    </button>
-                  )}
                   <button
-                    className="btn btn-secondary"
+                    className="btn btn-primary"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     Upload Photo
