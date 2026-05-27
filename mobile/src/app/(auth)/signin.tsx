@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -62,7 +63,11 @@ export default function LoginScreen() {
             <View style={styles.header}>
               {/* Logo */}
               <View style={styles.logoContainer}>
-                <Icon name="grid" size={42} color="#FFFFFF" />
+                <Image
+                  source={require("@/assets/images/new-logo.jpg")}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
               </View>
 
               {/* Title */}
@@ -211,20 +216,13 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 96,
     height: 96,
-    borderRadius: 48,
-    backgroundColor: "#8B2CBA",
+    marginBottom: 24,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 24,
-
-    shadowColor: "#8B2CBA",
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 8,
+  },
+  logo: {
+    width: "100%",
+    height: "100%",
   },
 
   title: {

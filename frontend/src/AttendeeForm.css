@@ -92,6 +92,19 @@
   text-align: center;
 }
 
+.attendee-form-logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.attendee-form-logo {
+  height: 64px;
+  width: auto;
+  border-radius: 8px; /* Assuming rounded-md is roughly 8px */
+}
+
 .attendee-form-step-indicator {
   display: flex;
   align-items: center;

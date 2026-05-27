@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import './AttendeeForm.css';
+import logo from './assets/logo.jpg';
 import { getCourses, registerAttendee, type CourseOption } from './services/attendeeAPI';
 
 interface AttendeeFormData {
@@ -288,6 +289,9 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
 
         {/* Header */}
         <div className="attendee-form-header">
+          <div className="attendee-form-logo-container">
+            <img src={logo} alt="NIHUB Logo" className="attendee-form-logo" />
+          </div>
           <div className="attendee-form-step-indicator">
             <span className={`step ${step === 1 ? 'active' : 'completed'}`}>1</span>
             <div className={`step-line ${step === 2 ? 'active' : ''}`}></div>

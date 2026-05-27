@@ -90,7 +90,7 @@ export default function RegisterScreen() {
           <View style={styles.header}>
             <View style={styles.logoWrapper}>
               <Image
-                source={require("@/assets/images/logo.png")}
+                source={require("@/assets/images/new-logo.jpg")}
                 style={styles.logo}
                 resizeMode="contain"
               />
