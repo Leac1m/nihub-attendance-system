@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://nihub:nihub-password@localhost:5432/nihub")
+UPLOAD_DIR = Path("uploads")
 
 
 def get_connection():

@@ -46,7 +46,7 @@ from staff_auth import (
 app = FastAPI()
 
 # Create uploads directory if it doesn't exist
-UPLOAD_DIR = Path("uploads")
+from db import UPLOAD_DIR
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 

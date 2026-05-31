@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import io
+import os
 from datetime import date
 from typing import Any
 from uuid import uuid4
 
 import qrcode
-from db import get_connection
+from db import get_connection, UPLOAD_DIR
 
 
 class CourseNotFoundError(Exception):
@@ -193,6 +194,14 @@ class CourseService:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
                 self._verify_course(cur, course_code)
+                # Fetch and delete registrant image files
+                cur.execute("SELECT image_url FROM registrants WHERE course_code = %s", (course_code,))
+                for (image_url,) in cur.fetchall():
+                    if image_url:
+                        file_path = UPLOAD_DIR / os.path.basename(image_url)
+                        if file_path.exists():
+                            file_path.unlink()
+                # Cascade delete in DB (courses -> registrants -> attendance)
                 cur.execute("DELETE FROM courses WHERE code = %s", (course_code,))
                 conn.commit()
 
