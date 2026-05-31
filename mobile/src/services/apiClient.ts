@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE_URL } from "@/config/api";
+import { resolveBaseUrl } from "@/config/api";
 
 
 const TOKEN_KEY = "auth_token";
@@ -87,8 +87,8 @@ export async function apiRequest<T>(
       requestHeaders.Authorization = `Bearer ${token}`;
     }
 
-    // Build full URL
-    const url = `${API_BASE_URL}${endpoint}`;
+    // Build full URL — resolveBaseUrl() is called per-request so runtime overrides are always picked up
+    const url = `${resolveBaseUrl()}${endpoint}`;
 
     // Prepare request options
     const fetchOptions: RequestInit = {
@@ -143,7 +143,7 @@ export async function apiRequest<T>(
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown network error";
-    console.error(`API request failed for ${endpoint}:`, error);
+    console.error(`API request failed for ${resolveBaseUrl()}${endpoint}:`, error);
     return {
       success: false,
       error: errorMessage,

@@ -3,6 +3,8 @@ import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useEffect } from "react";
+import { initApiOverride } from "@/config/api";
 
 function RootLayoutContent() {
   const { isRestoring } = useAuth();
@@ -63,6 +65,11 @@ function RootLayoutContent() {
 }
 
 export default function RootLayout() {
+  // Load any persisted API URL override from AsyncStorage before first request
+  useEffect(() => {
+    initApiOverride();
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>

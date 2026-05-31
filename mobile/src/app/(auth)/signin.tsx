@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -11,12 +11,24 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  LayoutAnimation,
+  UIManager,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather as Icon } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  getOverrideUrl,
+  setOverrideUrl,
+  resolveBaseUrl,
+} from "@/config/api";
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -24,6 +36,13 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [secureText, setSecureText] = useState(true);
   const [error, setError] = useState("");
+
+  // Triple-tap URL override state
+  const [showUrlPanel, setShowUrlPanel] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasOverride = getOverrideUrl() !== null;
 
   const { signIn, isLoading } = useAuth();
 
@@ -40,6 +59,44 @@ export default function LoginScreen() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed");
     }
+  };
+
+  // --- Triple-tap logic ---
+  const handleBadgeTap = () => {
+    tapCountRef.current += 1;
+
+    // Reset debounce timer on every tap
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => {
+      tapCountRef.current = 0;
+    }, 600);
+
+    if (tapCountRef.current >= 3) {
+      tapCountRef.current = 0;
+      if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setUrlInput(resolveBaseUrl());
+      setShowUrlPanel(true);
+    }
+  };
+
+  const handleSaveUrl = async () => {
+    const trimmed = urlInput.trim();
+    if (!trimmed) return;
+    await setOverrideUrl(trimmed);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setShowUrlPanel(false);
+  };
+
+  const handleResetUrl = async () => {
+    await setOverrideUrl(null);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setShowUrlPanel(false);
+  };
+
+  const handleCancelUrl = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setShowUrlPanel(false);
   };
 
   return (
@@ -73,10 +130,64 @@ export default function LoginScreen() {
               {/* Title */}
               <Text style={styles.title}>Track Attendance</Text>
 
-              {/* Badge */}
-              <View style={styles.badge}>
+              {/* Badge — triple-tap to reveal URL override */}
+              <TouchableOpacity
+                activeOpacity={1}
+                onPress={handleBadgeTap}
+                style={styles.badge}
+              >
                 <Text style={styles.badgeText}>Powered by NIHUB</Text>
-              </View>
+                {hasOverride && (
+                  <View style={styles.overrideDot} />
+                )}
+              </TouchableOpacity>
+
+              {/* URL Override Panel */}
+              {showUrlPanel && (
+                <View style={styles.urlPanel}>
+                  <View style={styles.urlPanelHeader}>
+                    <Icon name="settings" size={14} color="#8B2CBA" />
+                    <Text style={styles.urlPanelTitle}>Developer: API Base URL</Text>
+                  </View>
+
+                  <TextInput
+                    value={urlInput}
+                    onChangeText={setUrlInput}
+                    placeholder="http://192.168.x.x:8000"
+                    placeholderTextColor="#A3A3A3"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="url"
+                    style={styles.urlInput}
+                  />
+
+                  <View style={styles.urlPanelActions}>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={handleResetUrl}
+                      style={[styles.urlActionBtn, styles.urlResetBtn]}
+                    >
+                      <Text style={styles.urlResetText}>Reset</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={handleCancelUrl}
+                      style={[styles.urlActionBtn, styles.urlCancelBtn]}
+                    >
+                      <Text style={styles.urlCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={handleSaveUrl}
+                      style={[styles.urlActionBtn, styles.urlSaveBtn]}
+                    >
+                      <Text style={styles.urlSaveText}>Save</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
 
             {/* Login Card */}
@@ -238,6 +349,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 7,
     borderRadius: 999,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
 
   badgeText: {
@@ -246,6 +360,95 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 1,
     textTransform: "uppercase",
+  },
+
+  overrideDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#FFD60A",
+  },
+
+  // URL Override Panel
+  urlPanel: {
+    marginTop: 12,
+    width: "100%",
+    backgroundColor: "#1E1035",
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+  },
+
+  urlPanelHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  urlPanelTitle: {
+    color: "#C084FC",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+
+  urlInput: {
+    backgroundColor: "#2D1A4E",
+    borderWidth: 1,
+    borderColor: "#6D28D9",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    color: "#FFFFFF",
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+  },
+
+  urlPanelActions: {
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "flex-end",
+  },
+
+  urlActionBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+
+  urlResetBtn: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#EF4444",
+  },
+
+  urlResetText: {
+    color: "#EF4444",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  urlCancelBtn: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#6B7280",
+  },
+
+  urlCancelText: {
+    color: "#9CA3AF",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  urlSaveBtn: {
+    backgroundColor: "#7C3AED",
+  },
+
+  urlSaveText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   card: {

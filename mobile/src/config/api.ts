@@ -1,5 +1,50 @@
 import { Platform } from "react-native";
 import * as Device from "expo-device";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const DEV_OVERRIDE_STORAGE_KEY = "DEV_API_BASE_URL_OVERRIDE";
+
+/**
+ * Module-level mutable variable holding the current override URL.
+ * Initialized to null; populated by initApiOverride() on app start.
+ */
+let _overrideUrl: string | null = null;
+
+/**
+ * Call this once at app startup (e.g. in _layout.tsx) to load a persisted
+ * URL override from AsyncStorage into the in-memory variable.
+ */
+export async function initApiOverride(): Promise<void> {
+  try {
+    const stored = await AsyncStorage.getItem(DEV_OVERRIDE_STORAGE_KEY);
+    _overrideUrl = stored ?? null;
+  } catch {
+    _overrideUrl = null;
+  }
+}
+
+/**
+ * Returns the currently active URL override, or null if none is set.
+ */
+export function getOverrideUrl(): string | null {
+  return _overrideUrl;
+}
+
+/**
+ * Persist and apply a new URL override. Pass null to clear the override.
+ */
+export async function setOverrideUrl(url: string | null): Promise<void> {
+  try {
+    if (url) {
+      await AsyncStorage.setItem(DEV_OVERRIDE_STORAGE_KEY, url);
+    } else {
+      await AsyncStorage.removeItem(DEV_OVERRIDE_STORAGE_KEY);
+    }
+    _overrideUrl = url;
+  } catch (e) {
+    console.error("Failed to persist API URL override:", e);
+  }
+}
 
 /**
  * Get the API base URL based on the current platform.
@@ -24,6 +69,17 @@ export function getApiBaseUrl(): string {
   return "http://localhost:8000";
 }
 
+/**
+ * Resolves the active base URL at call time.
+ * Priority: runtime override → EXPO_PUBLIC_API_URL env var → platform default.
+ * Call this on every request (not at import time) to always pick up overrides.
+ */
+export function resolveBaseUrl(): string {
+  return _overrideUrl ?? process.env.EXPO_PUBLIC_API_URL ?? getApiBaseUrl();
+}
+
+// Keep the static export for backwards compatibility (used in places that don't
+// need per-request resolution, e.g. image URIs at render time).
 export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || getApiBaseUrl();
 
 /**
