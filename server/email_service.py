@@ -110,39 +110,39 @@ class EmailService:
         m_id = registrant["id"]
 
         # Build course detail strings
-        course_name = course.get("name", "") if course else ""
-        course_code = course.get("code", "") if course else ""
-        course_description = course.get("description", "") if course else ""
-        course_duration = course.get("duration", "") if course else ""
+        program_name = course.get("name", "") if course else ""
+        program_code = course.get("code", "") if course else ""
+        program_description = course.get("description", "") if course else ""
+        program_duration = course.get("duration", "") if course else ""
 
-        course_text_block = ""
-        course_html_block = ""
-        if course_name or course_code:
-            course_text_block = (
-                f"\nCourse Details:\n"
-                f"  Name:        {course_name}\n"
-                f"  Code:        {course_code}\n"
+        program_text_block = ""
+        program_html_block = ""
+        if program_name or program_code:
+            program_text_block = (
+                f"\nProgram Details:\n"
+                f"  Name:        {program_name}\n"
+                f"  Code:        {program_code}\n"
             )
-            if course_description:
-                course_text_block += f"  Description: {course_description}\n"
-            if course_duration:
-                course_text_block += f"  Duration:    {course_duration}\n"
+            if program_description:
+                program_text_block += f"  Description: {program_description}\n"
+            if program_duration:
+                program_text_block += f"  Duration:    {program_duration}\n"
 
-            course_html_block = (
-                f"<p><strong>Course Details:</strong><br/>"
-                f"Name: {course_name}<br/>"
-                f"Code: <code>{course_code}</code>"
+            program_html_block = (
+                f"<p><strong>Program Details:</strong><br/>"
+                f"Name: {program_name}<br/>"
+                f"Code: <code>{program_code}</code>"
             )
-            if course_description:
-                course_html_block += f"<br/>Description: {course_description}"
-            if course_duration:
-                course_html_block += f"<br/>Duration: {course_duration}"
-            course_html_block += "</p>"
+            if program_description:
+                program_html_block += f"<br/>Description: {program_description}"
+            if program_duration:
+                program_html_block += f"<br/>Duration: {program_duration}"
+            program_html_block += "</p>"
 
         msg = MIMEMultipart("related")
         msg["Subject"] = (
             f"Welcome {name} — Your Registration QR Code"
-            + (f" for {course_name}" if course_name else "")
+            + (f" for {program_name}" if program_name else "")
         )
         msg["From"] = cfg["from"] or cfg["username"]
         msg["To"] = recipient
@@ -150,7 +150,7 @@ class EmailService:
         body_text = (
             f"Hi {name},\n\n"
             f"You have been successfully registered.\n"
-            f"{course_text_block}\n"
+            f"{program_text_block}\n"
             f"Your Registrant ID: {m_id}\n"
             f"Please keep this email for your records.\n"
         )
@@ -159,7 +159,7 @@ class EmailService:
             f"<html><body style='font-family: Arial, sans-serif; color: #333;'>"
             f"<p>Hi <strong>{name}</strong>,</p>"
             f"<p>You have been successfully registered.</p>"
-            f"{course_html_block}"
+            f"{program_html_block}"
             f"<p>Your <strong>Registrant ID</strong>: <code>{m_id}</code></p>"
             f"<p>Show your QR code below on the day of the event:</p>"
             f'<p><img src="cid:qr_code" alt="Your QR Code" '

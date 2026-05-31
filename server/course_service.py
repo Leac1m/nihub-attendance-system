@@ -143,8 +143,8 @@ class CourseService:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT id FROM registrants WHERE course_code = %s AND matriculation_number = %s",
-                    (course_code, matric_number),
+                    "SELECT id FROM registrants WHERE course_code = %s AND (id = %s OR matriculation_number = %s)",
+                    (course_code, matric_number, matric_number),
                 )
                 row = cur.fetchone()
                 if not row:

@@ -64,7 +64,7 @@ export default function QRScannerScreen() {
 
       if (!eventId || Array.isArray(eventId)) {
         if (isMounted) {
-          setError("Course not found");
+          setError("Program not found");
           setIsLoading(false);
         }
         return;

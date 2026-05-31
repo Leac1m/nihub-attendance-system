@@ -312,7 +312,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
           <div className="attendee-form-content">
             <div className="form-group">
               <label htmlFor="courseCode" className="form-label">
-                Course
+                Program
               </label>
               <select
                 id="courseCode"
@@ -323,7 +323,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
                 disabled={courses.length === 0}
               >
                 {courses.length === 0 ? (
-                  <option value={selectedCourseCode}>Loading courses...</option>
+                    <option value={selectedCourseCode}>Loading programs...</option>
                 ) : (
                   courses.map((course) => (
                     <option key={course.code} value={course.code}>

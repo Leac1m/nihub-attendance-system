@@ -34,8 +34,8 @@ export default function CreateEventScreen() {
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (!courseName.trim()) errors.courseName = "Course name is required.";
-    if (!courseCode.trim()) errors.courseCode = "Course code is required.";
+    if (!courseName.trim()) errors.courseName = "Program name is required.";
+    if (!courseCode.trim()) errors.courseCode = "Program code is required.";
     if (!durationValue.trim() || isNaN(Number(durationValue)) || Number(durationValue) <= 0) {
       errors.durationValue = "Enter a valid duration number.";
     }
@@ -105,14 +105,14 @@ export default function CreateEventScreen() {
       >
         <View style={styles.card}>
           <Text style={styles.subtitle}>
-            Enter the details for the new course or event to add it to the
+            Enter the details for the new program or event to add it to the
             schedule.
           </Text>
 
           <View style={styles.form}>
             {/* Course Name */}
             <View style={styles.field}>
-              <Text style={styles.label}>Course Name</Text>
+              <Text style={styles.label}>Program Name</Text>
 
               <View style={[styles.inputWrapper, fieldErrors.courseName ? styles.inputError : null]}>
                 <TextInput
@@ -134,7 +134,7 @@ export default function CreateEventScreen() {
 
             {/* Course Code */}
             <View style={styles.field}>
-              <Text style={styles.label}>Course Code</Text>
+              <Text style={styles.label}>Program Code</Text>
 
               <View style={[styles.inputWrapper, fieldErrors.courseCode ? styles.inputError : null]}>
                 <TextInput

@@ -1,7 +1,7 @@
 {
   "expo": {
     "jsEngine": "hermes",
-    "name": "nihub-attendance-app",
+    "name": "nihub attendane tracker",
     "slug": "nihub-attendance-app",
     "version": "1.0.0",
     "orientation": "portrait",

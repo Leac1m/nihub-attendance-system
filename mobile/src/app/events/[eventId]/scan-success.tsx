@@ -64,7 +64,7 @@ export default function AttendeeVerificationScreen() {
     setError(null);
 
     const todayStr = new Date().toISOString().split("T")[0];
-    const result = await markAttendance(eventId, attendee.matriculation_number, todayStr, true);
+    const result = await markAttendance(eventId, attendee.id, todayStr, true);
 
     if (!result.success) {
       setError(result.error || "Failed to record attendance");
