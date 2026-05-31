@@ -134,6 +134,15 @@ class CourseService:
             "attendance_days": [],
         }
 
+    def delete_registrant(self, course_code: str, registrant_id: str) -> None:
+        with self._get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM registrants WHERE id = %s AND course_code = %s",
+                    (registrant_id, course_code),
+                )
+                conn.commit()
+
     def mark_attendance(
         self,
         course_code: str,

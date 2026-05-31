@@ -261,7 +261,7 @@ async def register_for_course(
         except CourseNotFoundError:
             course_info = None
 
-        # Fire-and-forget: send registration email with QR code
+        # Send registration email with QR code - rollback on failure
         try:
             email_service.send_registration_email(created, created.get("qr_bytes", b""), course=course_info)
         except Exception as exc:
@@ -270,6 +270,13 @@ async def register_for_course(
                 created.get("email"),
                 exc,
             )
+            # Rollback: delete the registrant and image
+            service.delete_registrant(course_code, created["id"])
+            if image_filename:
+                file_path = UPLOAD_DIR / image_filename
+                if file_path.exists():
+                    file_path.unlink()
+            raise HTTPException(status_code=500, detail="Registration failed: could not send confirmation email")
 
         # Return only a success message — no personal data echoed back
         return {"message": "Registration saved"}

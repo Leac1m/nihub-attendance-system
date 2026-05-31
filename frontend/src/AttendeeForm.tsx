@@ -227,7 +227,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
       );
 
       setSuccessMessage(
-        `Welcome ${formData.name}! You have been successfully registered.`
+        `Welcome ${formData.name}! You have been successfully registered. Please check your email for the QR code.`
       );
 
       // Reset form after 3 seconds
