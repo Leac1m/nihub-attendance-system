@@ -53,6 +53,14 @@ export async function setOverrideUrl(url: string | null): Promise<void> {
  * Physical Android / iOS devices on the same LAN use the host machine IP
  */
 export function getApiBaseUrl(): string {
+  if (_overrideUrl) {
+    return _overrideUrl;
+  }
+
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
   if (Platform.OS === "android") {
     // 10.0.2.2 only works inside the Android emulator
     if (Device.isDevice) {
@@ -75,12 +83,12 @@ export function getApiBaseUrl(): string {
  * Call this on every request (not at import time) to always pick up overrides.
  */
 export function resolveBaseUrl(): string {
-  return _overrideUrl ?? process.env.EXPO_PUBLIC_API_URL ?? getApiBaseUrl();
+  return getApiBaseUrl();
 }
 
 // Keep the static export for backwards compatibility (used in places that don't
 // need per-request resolution, e.g. image URIs at render time).
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || getApiBaseUrl();
+export const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Available API endpoints
@@ -107,7 +115,9 @@ export const API_ENDPOINTS = {
 };
 
 export const API_CONFIG = {
-  baseUrl: API_BASE_URL,
+  get baseUrl() {
+    return getApiBaseUrl();
+  },
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

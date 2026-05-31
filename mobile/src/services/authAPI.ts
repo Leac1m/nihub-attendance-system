@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE_URL, API_ENDPOINTS } from "@/config/api";
+import { API_ENDPOINTS, resolveBaseUrl } from "@/config/api";
 
 import {
   apiRequest,
@@ -305,7 +305,7 @@ export async function downloadCourseAttendanceSpreadsheet(
       return { success: false, error: "No authentication token found" };
     }
 
-    const url = `${API_BASE_URL}${API_ENDPOINTS.DOWNLOAD_ATTENDANCE_SPREADSHEET(courseCode)}`;
+    const url = `${resolveBaseUrl()}${API_ENDPOINTS.DOWNLOAD_ATTENDANCE_SPREADSHEET(courseCode)}`;
     const filename = `${courseCode}_attendance.xlsx`;
     const XLSX_MIME =
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
