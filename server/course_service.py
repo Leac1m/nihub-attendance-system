@@ -152,15 +152,71 @@ class CourseService:
     ) -> list[dict[str, Any]]:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
+                # If matric_number looks like a registrant ID (ATT-XXXXXXXX),
+                # resolve it across all courses first, then check enrollment.
+                registrant_id = matric_number
+                if matric_number.startswith("ATT-"):
+                    cur.execute(
+                        "SELECT id, course_code FROM registrants WHERE id = %s",
+                        (matric_number,),
+                    )
+                    row = cur.fetchone()
+                    if not row:
+                        raise RegistrantNotFoundError("Registrant not found")
+                    registrant_id = row["id"]
+                    # Verify this registrant belongs to the specified course
+                    if row["course_code"] != course_code:
+                        raise RegistrantNotFoundError("Registrant not found in this course")
+                else:
+                    # Legacy: look up by matriculation_number within this course
+                    cur.execute(
+                        "SELECT id FROM registrants WHERE course_code = %s AND matriculation_number = %s",
+                        (course_code, matric_number),
+                    )
+                    row = cur.fetchone()
+                    if not row:
+                        raise RegistrantNotFoundError("Registrant not found in this course")
+                    registrant_id = row["id"]
+
+                attendance_date_str = str(attendance_date)
+
                 cur.execute(
-                    "SELECT id FROM registrants WHERE course_code = %s AND (id = %s OR matriculation_number = %s)",
-                    (course_code, matric_number, matric_number),
+                    "SELECT id FROM attendance WHERE registrant_id = %s AND date = %s",
+                    (registrant_id, attendance_date_str),
+                )
+                if cur.fetchone():
+                    raise AttendanceAlreadyMarkedError("Attendance already marked for this date")
+
+                cur.execute(
+                    "INSERT INTO attendance (registrant_id, date, present) VALUES (%s, %s, %s)",
+                    (registrant_id, attendance_date_str, present),
+                )
+                conn.commit()
+
+                cur.execute(
+                    "SELECT date, present FROM attendance WHERE registrant_id = %s ORDER BY date",
+                    (registrant_id,),
+                )
+                return [dict(r) for r in cur.fetchall()]
+
+    def mark_attendance_by_id(
+        self,
+        course_code: str,
+        registrant_id: str,
+        attendance_date: date,
+        present: bool,
+    ) -> list[dict[str, Any]]:
+        with self._get_connection() as conn:
+            with conn.cursor() as cur:
+                # Verify registrant belongs to this course
+                cur.execute(
+                    "SELECT id FROM registrants WHERE id = %s AND course_code = %s",
+                    (registrant_id, course_code),
                 )
                 row = cur.fetchone()
                 if not row:
                     raise RegistrantNotFoundError("Registrant not found in this course")
 
-                registrant_id = row["id"]
                 attendance_date_str = str(attendance_date)
 
                 cur.execute(

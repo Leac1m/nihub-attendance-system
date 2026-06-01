@@ -79,6 +79,12 @@ class AttendanceRecord(BaseModel):
     present: bool = True
 
 
+class AttendanceByIdRecord(BaseModel):
+    id: str
+    present: bool = True
+    date: date
+
+
 class RegistrantCreate(BaseModel):
     name: str
     email: EmailStr
@@ -297,6 +303,28 @@ async def mark_attendance(
         attendance = service.mark_attendance(
             course_code=course_code,
             matric_number=matric_number,
+            attendance_date=record.date,
+            present=record.present,
+        )
+        return {"message": "Attendance recorded", "attendance": attendance}
+    except CourseNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RegistrantNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except AttendanceAlreadyMarkedError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/courses/{course_code}/attendance", status_code=200)
+async def mark_attendance_by_id(
+    course_code: str,
+    record: AttendanceByIdRecord,
+    staff: StaffPublic = Depends(get_current_staff),
+):
+    try:
+        attendance = service.mark_attendance_by_id(
+            course_code=course_code,
+            registrant_id=record.id,
             attendance_date=record.date,
             present=record.present,
         )
