@@ -441,7 +441,6 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     onChange={handleFileChange}
                     style={{ display: 'none' }}
                   />
