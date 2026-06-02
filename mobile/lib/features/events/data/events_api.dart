@@ -75,18 +75,7 @@ class EventsApi {
     await _client.post(Endpoints.courseRegister(code), data: data);
   }
 
-  Future<ScanContext> getScanContext(String code) async {
-    final res = await _client.get(Endpoints.scanContext(code));
-    final map = Map<String, dynamic>.from(res.data);
-    // Prefix relative image URLs with base URL
-    if (map['attendee'] != null && map['attendee']['image_url'] != null) {
-      final img = map['attendee']['image_url'].toString();
-      if (!img.startsWith('http')) {
-        map['attendee']['image_url'] = '${ApiConfig.baseUrl}$img';
-      }
-    }
-    return ScanContext.fromJson(map);
-  }
+
 
   Future<void> markAttendanceById(String code, String registrantId, bool present, {required String date}) async {
     await _client.post(

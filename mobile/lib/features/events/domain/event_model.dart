@@ -56,16 +56,4 @@ class Registrant {
   }
 }
 
-class ScanContext {
-  final EventModel course;
-  final Registrant attendee;
 
-  ScanContext({required this.course, required this.attendee});
-
-  factory ScanContext.fromJson(Map<String, dynamic> json) {
-    return ScanContext(
-      course: EventModel.fromJson(json['course'] ?? {}),
-      attendee: Registrant.fromJson(json['attendee'] ?? {}),
-    );
-  }
-}

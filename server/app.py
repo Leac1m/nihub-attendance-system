@@ -216,14 +216,7 @@ async def get_course_registrant(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@app.get("/courses/{course_code}/scan-context")
-async def get_course_scan_context(course_code: str):
-    try:
-        return service.get_scan_context(course_code)
-    except CourseNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except RegistrantNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+
 
 
 @app.post("/courses/{course_code}/register")

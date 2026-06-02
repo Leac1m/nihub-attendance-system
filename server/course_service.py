@@ -81,22 +81,7 @@ class CourseService:
                 registrant["attendance_days"] = [dict(r) for r in cur.fetchall()]
                 return registrant
 
-    def get_scan_context(self, course_code: str) -> dict[str, Any]:
-        course = self._get_course(course_code)
-        registrants = self.get_registrants(course_code)
 
-        if not registrants:
-            raise RegistrantNotFoundError("No registrants found in this course")
-
-        return {
-            "course": {
-                "name": course["name"],
-                "code": course["code"],
-                "description": course["description"],
-                "duration": course["duration"],
-            },
-            "attendee": registrants[0],
-        }
 
     def register(self, course_code: str, registrant: dict[str, Any]) -> dict[str, Any]:
         with self._get_connection() as conn:

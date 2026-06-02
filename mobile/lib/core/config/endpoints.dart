@@ -11,7 +11,4 @@ class Endpoints {
   static String courseAttendanceById(String code) => '/courses/$code/attendance';
   static String courseAttendanceSpreadsheet(String code) =>
       '/courses/$code/attendance/spreadsheet';
-  static String courseAttendanceMark(String code, String matric) =>
-      '/courses/$code/attendance/$matric';
-  static String scanContext(String code) => '/courses/$code/scan-context';
 }

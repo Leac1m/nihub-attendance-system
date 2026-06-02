@@ -53,9 +53,9 @@ class EventsNotifier extends StateNotifier<AsyncValue<List<EventModel>>> {
   }
 }
 
-final scanContextProvider = FutureProvider.family<ScanContext, String>((ref, code) async {
+final registrantDetailsProvider = FutureProvider.family<Registrant, ({String courseCode, String registrantId})>((ref, arg) async {
   final api = ref.read(eventsApiProvider);
-  return await api.getScanContext(code);
+  return await api.getRegistrant(arg.courseCode, arg.registrantId);
 });
 
 final registrantsProvider = FutureProvider.family<List<Registrant>, String>((ref, code) async {

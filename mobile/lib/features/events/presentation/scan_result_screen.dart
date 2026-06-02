@@ -17,13 +17,15 @@ class ScanResultScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scanContextAsync = ref.watch(scanContextProvider(eventCode));
+    final registrantAsync = ref.watch(
+      registrantDetailsProvider((courseCode: eventCode, registrantId: qrValue)),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: SafeArea(
-        child: scanContextAsync.when(
-          data: (ctx) => SingleChildScrollView(
+        child: registrantAsync.when(
+          data: (attendee) => SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenHorizontal,
@@ -76,7 +78,7 @@ class ScanResultScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.xxl),
                 // Attendee card
                 AttendeeCard(
-                  attendee: ctx.attendee,
+                  attendee: attendee,
                 ),
                 const SizedBox(height: AppSpacing.xxl),
                 // Action buttons
