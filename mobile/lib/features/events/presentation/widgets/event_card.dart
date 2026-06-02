@@ -30,9 +30,9 @@ class EventCard extends StatelessWidget {
       confirmDismiss: (_) async {
         return await showDialog<bool>(
           context: context,
-          builder: (ctx) => AlertDialog(
+            builder: (ctx) => AlertDialog(
             title: Text(
-              'Delete Event',
+              'Delete Department',
               style: GoogleFonts.inter(fontWeight: FontWeight.w700),
             ),
             content: Text(

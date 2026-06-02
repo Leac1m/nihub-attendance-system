@@ -105,7 +105,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          'Events',
+                              'Departments',
                           style: GoogleFonts.inter(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
@@ -136,7 +136,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                           decoration: InputDecoration(
                             filled: false,
                             fillColor: Colors.transparent,
-                            hintText: 'Search events...',
+                                hintText: 'Search departments...',
                             hintStyle: GoogleFonts.inter(fontSize: 16, color: AppColors.textMuted),
                             prefixIcon: const Icon(Icons.search, color: AppColors.textMuted, size: 22),
                             suffixIcon: _query.isNotEmpty
@@ -169,7 +169,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                               ),
                               const SizedBox(height: AppSpacing.lg),
                               Text(
-                                _query.isNotEmpty ? 'No events match your search' : 'No events found',
+                                    _query.isNotEmpty ? 'No departments match your search' : 'No departments found',
                                 style: GoogleFonts.inter(
                                   fontSize: 16,
                                   color: AppColors.textSecondary,
@@ -231,7 +231,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
         onPressed: () => context.push('/events/create'),
         icon: const Icon(Icons.add),
         label: Text(
-          'Create Event',
+          'Create Department',
           style: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
         backgroundColor: AppColors.primary,

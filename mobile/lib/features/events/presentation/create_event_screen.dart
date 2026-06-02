@@ -76,7 +76,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                 const Spacer(),
                 // Title
                 Text(
-                  'Create New Event',
+                  'New Department',
                   style: GoogleFonts.inter(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
@@ -110,7 +110,7 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Fill in the event details',
+                            'Fill in the department details',
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               color: AppColors.textSecondary,
@@ -118,8 +118,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.xl),
-                          // Program Name
-                          _buildLabel('Program Name'),
+                          // Department Name
+                          _buildLabel('Department Name'),
                           const SizedBox(height: AppSpacing.sm),
                           TextFormField(
                             controller: _nameController,
@@ -128,8 +128,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                             validator: (v) => v == null || v.isEmpty ? 'Required' : null,
                           ),
                           const SizedBox(height: AppSpacing.lg),
-                          // Program Code
-                          _buildLabel('Program Code'),
+                          // Department Code
+                          _buildLabel('Department Code'),
                           const SizedBox(height: AppSpacing.sm),
                           TextFormField(
                             controller: _codeController,
@@ -227,8 +227,8 @@ class _CreateEventScreenState extends ConsumerState<CreateEventScreen> {
                                 height: 24,
                                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                               )
-                            : Text(
-                                'Create Event',
+                                : Text(
+                                'Create Department',
                                 style: GoogleFonts.inter(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
