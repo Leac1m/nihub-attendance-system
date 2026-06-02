@@ -164,7 +164,7 @@ async def create_course(
             description=payload.description.strip(),
             duration=payload.duration.strip(),
         )
-        return {"message": "Event created", "course": course}
+        return {"message": "Department created", "course": course}
     except CourseAlreadyExistsError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -382,7 +382,7 @@ async def get_attendance_spreadsheet(
         ws.row_dimensions[1].height = 28
 
         meta_pairs = [
-            ("Course Code",  course.get("code", course_code)),
+            ("Department Code",  course.get("code", course_code)),
             ("Description",  course.get("description", "")),
             ("Duration",     course.get("duration", "")),
             ("Generated",    datetime.now().strftime("%Y-%m-%d %H:%M")),
@@ -473,7 +473,7 @@ async def get_attendance_spreadsheet(
                 end_row=note_row,   end_column=max(total_cols, 1)
             )
             note = ws.cell(row=note_row, column=1,
-                           value="No registrants found for this course.")
+                               value="No registrants found for this department.")
             _style(note, font=Font(italic=True, color="888888", name="Calibri"),
                    align=CENTER)
 
@@ -504,7 +504,7 @@ async def delete_course(
 ):
     try:
         service.delete_course(course_code)
-        return {"message": "Event deleted"}
+        return {"message": "Department deleted"}
     except CourseNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
