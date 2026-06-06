@@ -34,7 +34,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
     try {
-      await ref.read(authStateProvider.notifier).register(
+      await ref.read(authStateProvider.notifier).registerStaff(
             _emailController.text.trim(),
             _usernameController.text.trim(),
             _passwordController.text,

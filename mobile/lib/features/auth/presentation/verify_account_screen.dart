@@ -25,8 +25,8 @@ class _VerifyAccountScreenState extends ConsumerState<VerifyAccountScreen> {
       return;
     }
     try {
-      await ref.read(authStateProvider.notifier).verifyAccount(widget.username, _otp);
-      if (mounted) context.go('/events');
+      await ref.read(authStateProvider.notifier).verifyStaffAccount(widget.username, _otp);
+      if (mounted) context.go('/departments');
     } catch (e) {
       NotificationService.showError(e);
     }

@@ -1,17 +1,21 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import '../config/api_config.dart';
 import '../storage/secure_storage.dart';
+import 'auth_event_bus.dart';
 
 class ApiClient {
   final Dio _dio;
   final SecureStorageService _storage;
 
-  ApiClient(this._storage) : _dio = Dio(BaseOptions(
-    // baseUrl is set dynamically per request via _BaseUrlInterceptor
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
-    headers: {'Content-Type': 'application/json'},
-  )) {
+  ApiClient(this._storage)
+      : _dio = Dio(BaseOptions(
+          // baseUrl is set dynamically per request via _BaseUrlInterceptor
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 30),
+          headers: {'Content-Type': 'application/json'},
+        )) {
     _dio.interceptors.add(_BaseUrlInterceptor());
     _dio.interceptors.add(_AuthInterceptor(_storage, _dio));
   }
@@ -86,6 +90,7 @@ class _BaseUrlInterceptor extends Interceptor {
 class _AuthInterceptor extends Interceptor {
   final SecureStorageService _storage;
   final Dio _dio;
+  Completer<bool>? _refreshing;
 
   _AuthInterceptor(this._storage, this._dio);
 
@@ -93,7 +98,7 @@ class _AuthInterceptor extends Interceptor {
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     final requiresAuth = options.extra['requiresAuth'] == true;
     if (requiresAuth) {
-      final token = await _storage.getToken();
+      final token = await _storage.getAccessToken();
       if (token != null) {
         options.headers['Authorization'] = 'Bearer $token';
       }
@@ -102,10 +107,83 @@ class _AuthInterceptor extends Interceptor {
   }
 
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) {
-    if (err.response?.statusCode == 401) {
-      _storage.deleteToken();
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    final isAuthCall = err.requestOptions.extra['requiresAuth'] == true;
+    final alreadyRetried = err.requestOptions.extra['_retried'] == true;
+    final isRefreshCall = err.requestOptions.extra['_isRefresh'] == true;
+
+    if (err.response?.statusCode != 401 ||
+        !isAuthCall ||
+        alreadyRetried ||
+        isRefreshCall) {
+      return handler.next(err);
     }
-    handler.next(err);
+
+    final ok = await _refresh();
+    if (!ok) {
+      AuthEventBus().emit(AuthEvent.forceSignOut);
+      return handler.next(err);
+    }
+
+    // Retry the original request once with the freshly issued access token.
+    final req = err.requestOptions;
+    req.extra['_retried'] = true;
+    final newToken = await _storage.getAccessToken();
+    if (newToken != null) {
+      req.headers['Authorization'] = 'Bearer $newToken';
+    }
+    try {
+      final response = await _dio.fetch<dynamic>(req);
+      return handler.resolve(response);
+    } catch (_) {
+      return handler.next(err);
+    }
+  }
+
+  Future<bool> _refresh() async {
+    // Coalesce concurrent 401s into a single refresh call.
+    if (_refreshing != null) return _refreshing!.future;
+
+    final completer = Completer<bool>();
+    _refreshing = completer;
+    try {
+      final refresh = await _storage.getRefreshToken();
+      if (refresh == null) {
+        completer.complete(false);
+        return completer.future;
+      }
+      final res = await _dio.post<dynamic>(
+        '/auth/refresh',
+        data: {'refresh_token': refresh},
+        options: Options(
+          extra: {
+            'requiresAuth': false,
+            '_isRefresh': true,
+            '_retried': true,
+          },
+        ),
+      );
+      final data = res.data;
+      if (data is! Map) {
+        completer.complete(false);
+        return completer.future;
+      }
+      final access = data['access_token'] as String?;
+      final newRefresh = data['refresh_token'] as String?;
+      if (access == null || newRefresh == null) {
+        completer.complete(false);
+        return completer.future;
+      }
+      await _storage.saveTokens(access: access, refresh: newRefresh);
+      completer.complete(true);
+    } catch (_) {
+      completer.complete(false);
+    } finally {
+      _refreshing = null;
+    }
+    return completer.future;
   }
 }

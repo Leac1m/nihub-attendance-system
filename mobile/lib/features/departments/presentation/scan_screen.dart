@@ -6,9 +6,9 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../core/theme/app_theme.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
-  final String eventCode;
+  final String departmentCode;
 
-  const ScanScreen({super.key, required this.eventCode});
+  const ScanScreen({super.key, required this.departmentCode});
 
   @override
   ConsumerState<ScanScreen> createState() => _ScanScreenState();
@@ -29,7 +29,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
       facing: CameraFacing.back,
     );
 
-    // Scan line animation
     _scanLineController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -56,8 +55,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
 
     setState(() => _hasScanned = true);
     _controller?.stop();
-    
-    await context.push('/events/${widget.eventCode}/scan-success?qrValue=$code');
+
+    await context.push(
+        '/departments/${widget.departmentCode}/scan-success?qrValue=$code');
     
     if (mounted) {
       _controller?.dispose();
@@ -73,6 +73,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
     }
   }
 
+  @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final shortestSide = size.shortestSide;
@@ -82,7 +83,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
       backgroundColor: AppColors.darkBg,
       body: Column(
         children: [
-          // Header
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.screenHorizontal,
@@ -93,17 +93,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
               bottom: false,
               child: Row(
                 children: [
-                  // Back button
                   IconButton(
                     icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
                     onPressed: () => context.pop(),
                   ),
                   const Spacer(),
-                  // Event name and code
                   Column(
                     children: [
                       Text(
-                        widget.eventCode,
+                        widget.departmentCode,
                         style: GoogleFonts.inter(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
@@ -122,55 +120,46 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
                     ],
                   ),
                   const Spacer(),
-                  const SizedBox(width: 48), // Balance the back button
+                  const SizedBox(width: 48),
                 ],
               ),
             ),
           ),
-          // Camera area
           Expanded(
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Camera
                 MobileScanner(
                   key: _scannerKey,
                   controller: _controller,
                   onDetect: _onDetect,
                 ),
-                // Scanner box with corner markers
                 SizedBox(
                   width: scannerSize,
                   height: scannerSize,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      // Corner markers (purple)
-                      // Top-left
                       Positioned(
                         top: 0,
                         left: 0,
                         child: _cornerMarker(topLeft: true),
                       ),
-                      // Top-right
                       Positioned(
                         top: 0,
                         right: 0,
                         child: _cornerMarker(topRight: true),
                       ),
-                      // Bottom-left
                       Positioned(
                         bottom: 0,
                         left: 0,
                         child: _cornerMarker(bottomLeft: true),
                       ),
-                      // Bottom-right
                       Positioned(
                         bottom: 0,
                         right: 0,
                         child: _cornerMarker(bottomRight: true),
                       ),
-                      // Center icon
                       Center(
                         child: Container(
                           padding: const EdgeInsets.all(16),
@@ -185,7 +174,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
                           ),
                         ),
                       ),
-                      // Animated scan line
                       AnimatedBuilder(
                         animation: _scanLineAnimation,
                         builder: (context, child) {
@@ -213,7 +201,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
                     ],
                   ),
                 ),
-                // Instructions text
                 Positioned(
                   bottom: 80,
                   left: 0,
@@ -228,7 +215,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with SingleTickerProvid
                     ),
                   ),
                 ),
-                // Controls row
                 Positioned(
                   bottom: 16,
                   left: 0,
