@@ -95,11 +95,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
     try {
-      await ref.read(authStateProvider.notifier).signIn(
+      await ref.read(authStateProvider.notifier).signInStaff(
             _usernameController.text.trim(),
             _passwordController.text,
           );
-      if (mounted) context.go('/events');
+      if (mounted) context.go('/departments');
     } catch (e) {
       NotificationService.showError(e);
     }
