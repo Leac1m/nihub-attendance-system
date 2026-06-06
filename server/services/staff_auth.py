@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import os
+import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-import secrets
 from typing import Any
 
 import jwt
@@ -41,6 +42,11 @@ class VerificationCodeExpiredError(StaffAuthError):
     pass
 
 
+# ── refresh token constants ──────────────────────────────────────────────────
+
+REFRESH_TOKEN_DAYS = int(os.getenv("REFRESH_TOKEN_DAYS", "30"))
+
+
 @dataclass
 class StaffAuthService:
     secret_key: str
@@ -62,6 +68,7 @@ class StaffAuthService:
                         email,
                         password,
                         is_verified,
+                        is_admin,
                         verification_pin,
                         verification_pin_expires_at
                     FROM staff
@@ -104,6 +111,7 @@ class StaffAuthService:
                             email,
                             password,
                             is_verified,
+                            is_admin,
                             verification_pin,
                             verification_pin_expires_at
                         """,
@@ -121,7 +129,9 @@ class StaffAuthService:
                     return dict(row)
         except Exception as exc:
             if getattr(exc, "pgcode", None) == "23505":
-                raise StaffAlreadyExistsError("A staff account with that username already exists")
+                raise StaffAlreadyExistsError(
+                    "A staff account with that username already exists",
+                )
             raise
 
     def verify_staff_account(self, username: str, verification_pin: str) -> dict[str, Any]:
@@ -155,6 +165,7 @@ class StaffAuthService:
                         email,
                         password,
                         is_verified,
+                        is_admin,
                         verification_pin,
                         verification_pin_expires_at
                     """,
@@ -178,10 +189,11 @@ class StaffAuthService:
 
         return staff
 
-    def create_access_token(self, subject: str) -> str:
+    def create_access_token(self, subject: str, **extra: Any) -> str:
         now = datetime.now(tz=timezone.utc)
         exp = now + timedelta(minutes=self.access_token_minutes)
-        payload = {"sub": subject, "exp": exp}
+        payload: dict[str, Any] = {"sub": subject, "type": "staff", "exp": exp}
+        payload.update(extra)
         return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
 
     def decode_access_token(self, token: str) -> dict[str, Any]:
@@ -189,6 +201,99 @@ class StaffAuthService:
             return jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
         except jwt.PyJWTError:
             raise InvalidCredentialsError("Invalid or expired token")
+
+    # ── refresh token support ────────────────────────────────────────────────
+
+    def create_refresh_token(
+        self, *, subject_type: str, subject_id: str,
+    ) -> tuple[str, datetime]:
+        """Issue a 30-day refresh token.  Returns ``(raw_token, expires_at)``.
+
+        We store ``sha256(token)`` (hex) in the DB so a leak of the
+        table doesn't compromise active sessions.
+        """
+        raw = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(raw.encode()).hexdigest()
+        expires_at = datetime.now(tz=timezone.utc) + timedelta(days=REFRESH_TOKEN_DAYS)
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO refresh_tokens
+                        (token_hash, subject_type, subject_id, expires_at)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (token_hash, subject_type, subject_id, expires_at),
+                )
+                conn.commit()
+        return raw, expires_at
+
+    def rotate_refresh_token(
+        self, old_token: str,
+    ) -> tuple[str, str, datetime, str, str]:
+        """Rotate a refresh token: revoke the old, issue a new pair.
+
+        Returns ``(access_token, new_refresh_token, new_refresh_expires_at,
+        subject_type, subject_id)``.
+
+        Raises:
+            InvalidCredentialsError: the token is unknown, revoked, or
+                expired.
+        """
+        token_hash = hashlib.sha256(old_token.encode()).hexdigest()
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT subject_type, subject_id, expires_at, revoked_at
+                    FROM refresh_tokens
+                    WHERE token_hash = %s
+                    """,
+                    (token_hash,),
+                )
+                row = cur.fetchone()
+                if not row:
+                    raise InvalidCredentialsError("Invalid or expired refresh token")
+                if row.get("revoked_at") is not None:
+                    raise InvalidCredentialsError("Refresh token has been revoked")
+                if row["expires_at"] <= datetime.now(tz=timezone.utc):
+                    raise InvalidCredentialsError("Refresh token has expired")
+                # Skip verify_email:* rows — those are email-verification
+                # tokens, not refresh tokens, and should not be rotated.
+                if row["subject_id"].startswith("verify_email:"):
+                    raise InvalidCredentialsError(
+                        "Token is not a refresh token",
+                    )
+                subject_type = row["subject_type"]
+                subject_id = row["subject_id"]
+                cur.execute(
+                    "UPDATE refresh_tokens SET revoked_at = now() WHERE token_hash = %s",
+                    (token_hash,),
+                )
+                conn.commit()
+
+        access_token = self.create_access_token(subject=subject_id)
+        new_refresh, new_exp = self.create_refresh_token(
+            subject_type=subject_type, subject_id=subject_id,
+        )
+        return access_token, new_refresh, new_exp, subject_type, subject_id
+
+    def revoke_refresh_token(self, token: str) -> bool:
+        """Revoke a refresh token.  Returns True if a row was updated."""
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE refresh_tokens
+                    SET revoked_at = now()
+                    WHERE token_hash = %s AND revoked_at IS NULL
+                    """,
+                    (token_hash,),
+                )
+                rowcount = cur.rowcount
+                conn.commit()
+                return rowcount > 0
 
 
 class StaffPublic(BaseModel):
