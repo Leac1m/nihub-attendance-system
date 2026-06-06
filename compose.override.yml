@@ -4,3 +4,11 @@ services:
   postgres:
     ports:
       - "5432:5432"
+
+  nihub-proxy:
+    # Dev override: also expose the proxy on 8080 so existing client
+    # dev URLs (http://localhost:8080) keep working without changing
+    # the agent-D frontend defaults.  In production, only :80 is
+    # exposed by compose.yml.
+    ports:
+      - "8080:80"

@@ -24,8 +24,8 @@ services:
       context: ./server
       dockerfile: Containerfile
     container_name: nihub-server
-    ports:
-      - "8000:8000"
+    # No host port mapping — the server is only reachable through
+    # the nihub-proxy service below.
     networks:
       - nihub-net
     env_file:
@@ -39,6 +39,9 @@ services:
     volumes:
       - server_uploads:/app/uploads
       - server_qr_codes:/app/qr_codes
+      # Shared with the proxy: Caddy writes its access/error logs here
+      # and the server tails them to emit network_failure log records.
+      - proxy_logs:/app/logs/proxy
 
 
   nihub-frontend:
@@ -46,12 +49,27 @@ services:
       context: ./frontend
       dockerfile: Containerfile
     container_name: nihub-frontend
-    ports:
-      - "8080:8080"
+    # No host port mapping — the frontend is only reachable through
+    # the nihub-proxy service below.
     networks:
       - nihub-net
     depends_on:
       - nihub-server
+
+  nihub-proxy:
+    image: docker.io/caddy:2-alpine
+    container_name: nihub-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - proxy_logs:/var/log/caddy
+    networks:
+      - nihub-net
+    depends_on:
+      - nihub-server
+      - nihub-frontend
 
 networks:
   nihub-net:
@@ -61,3 +79,4 @@ volumes:
   postgres_data:
   server_uploads:
   server_qr_codes:
+  proxy_logs:
