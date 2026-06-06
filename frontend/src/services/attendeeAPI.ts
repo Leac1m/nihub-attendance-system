@@ -15,7 +15,7 @@ export interface RegistrationResponse {
 }
 
 /**
- * Register a new attendee for a course
+ * Register a new attendee for a department.
  */
 export async function registerAttendee(
   courseCode: string,
@@ -33,7 +33,7 @@ export async function registerAttendee(
   }
 
   const response = await fetch(
-    `/api/courses/${courseCode}/register`,
+    `/api/departments/${encodeURIComponent(courseCode)}/register`,
     {
       method: 'POST',
       body: formData,
@@ -41,20 +41,26 @@ export async function registerAttendee(
   );
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Registration failed');
+    let detail = 'Registration failed';
+    try {
+      const err = await response.json();
+      detail = err.detail || detail;
+    } catch {
+      /* not JSON */
+    }
+    throw new Error(detail);
   }
 }
 
 /**
- * Get list of courses
+ * Get list of departments.
  */
 export async function getCourses() {
-  const response = await fetch('/api/courses');
+  const response = await fetch('/api/departments');
   if (!response.ok) {
-    throw new Error('Failed to fetch courses');
+    throw new Error('Failed to fetch departments');
   }
 
-  const data: { courses?: CourseOption[] } = await response.json();
-  return data.courses ?? [];
+  const data: { departments?: CourseOption[] } = await response.json();
+  return data.departments ?? [];
 }

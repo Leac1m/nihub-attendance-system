@@ -1,5 +1,5 @@
-import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
-import { AuthProvider } from './auth/AuthContext';
+/* eslint-disable react-refresh/only-export-components */
+import { createBrowserRouter, Outlet } from 'react-router-dom';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { HomeRedirect } from './pages/HomeRedirect';
@@ -28,7 +28,7 @@ function NotFound() {
   );
 }
 
-const router = createBrowserRouter([
+export const router = createBrowserRouter([
   { path: '/', element: <HomeRedirect /> },
   {
     element: <Layout />,
@@ -70,11 +70,3 @@ const router = createBrowserRouter([
     ],
   },
 ]);
-
-export function App() {
-  return (
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
-  );
-}
