@@ -1,0 +1,9 @@
+{
+  "primary": { "deep": "#70008B", "main": "#8B2CBA", "light": "#8E24AA" },
+  "secondary": { "value": "#0059BB" },
+  "error": { "value": "#BA1A1A" },
+  "success": { "value": "#0070EA" },
+  "background": { "surface": "#F8F9FA", "card": "#FFFFFF", "dark": "#2E3132" },
+  "text": { "primary": "#191C1D", "secondary": "#504251", "muted": "#827282", "onDark": "#FFFFFF" },
+  "border": { "default": "#E5E7EB", "light": "#D3C1D2", "card": "#E7E8E9" }
+}
