@@ -23,10 +23,6 @@ class RegistrantNotFoundError(Exception):
     pass
 
 
-class AttendanceAlreadyMarkedError(Exception):
-    pass
-
-
 class DepartmentAlreadyExistsError(Exception):
     pass
 
@@ -134,101 +130,7 @@ class DepartmentService:
                 )
                 conn.commit()
 
-    def mark_attendance(
-        self,
-        department_code: str,
-        matric_number: str,
-        attendance_date: date,
-        present: bool,
-    ) -> list[dict[str, Any]]:
-        with self._get_connection() as conn:
-            with conn.cursor() as cur:
-                # If matric_number looks like a registrant ID (ATT-XXXXXXXX),
-                # resolve it across all departments first, then check enrollment.
-                registrant_id = matric_number
-                if matric_number.startswith("ATT-"):
-                    cur.execute(
-                        "SELECT id, department_code FROM registrants WHERE id = %s",
-                        (matric_number,),
-                    )
-                    row = cur.fetchone()
-                    if not row:
-                        raise RegistrantNotFoundError("Registrant not found")
-                    registrant_id = row["id"]
-                    # Verify this registrant belongs to the specified department
-                    if row["department_code"] != department_code:
-                        raise RegistrantNotFoundError("Registrant not found in this department")
-                else:
-                    # Legacy: look up by matriculation_number within this department
-                    cur.execute(
-                        "SELECT id FROM registrants "
-                        "WHERE department_code = %s AND matriculation_number = %s",
-                        (department_code, matric_number),
-                    )
-                    row = cur.fetchone()
-                    if not row:
-                        raise RegistrantNotFoundError("Registrant not found in this department")
-                    registrant_id = row["id"]
 
-                attendance_date_str = str(attendance_date)
-
-                cur.execute(
-                    "SELECT id FROM attendance WHERE registrant_id = %s AND date = %s",
-                    (registrant_id, attendance_date_str),
-                )
-                if cur.fetchone():
-                    raise AttendanceAlreadyMarkedError("Attendance already marked for this date")
-
-                cur.execute(
-                    "INSERT INTO attendance (registrant_id, date, present) VALUES (%s, %s, %s)",
-                    (registrant_id, attendance_date_str, present),
-                )
-                conn.commit()
-
-                cur.execute(
-                    "SELECT date, present FROM attendance WHERE registrant_id = %s ORDER BY date",
-                    (registrant_id,),
-                )
-                return [dict(r) for r in cur.fetchall()]
-
-    def mark_attendance_by_id(
-        self,
-        department_code: str,
-        registrant_id: str,
-        attendance_date: date,
-        present: bool,
-    ) -> list[dict[str, Any]]:
-        with self._get_connection() as conn:
-            with conn.cursor() as cur:
-                # Verify registrant belongs to this department
-                cur.execute(
-                    "SELECT id FROM registrants WHERE id = %s AND department_code = %s",
-                    (registrant_id, department_code),
-                )
-                row = cur.fetchone()
-                if not row:
-                    raise RegistrantNotFoundError("Registrant not found in this department")
-
-                attendance_date_str = str(attendance_date)
-
-                cur.execute(
-                    "SELECT id FROM attendance WHERE registrant_id = %s AND date = %s",
-                    (registrant_id, attendance_date_str),
-                )
-                if cur.fetchone():
-                    raise AttendanceAlreadyMarkedError("Attendance already marked for this date")
-
-                cur.execute(
-                    "INSERT INTO attendance (registrant_id, date, present) VALUES (%s, %s, %s)",
-                    (registrant_id, attendance_date_str, present),
-                )
-                conn.commit()
-
-                cur.execute(
-                    "SELECT date, present FROM attendance WHERE registrant_id = %s ORDER BY date",
-                    (registrant_id,),
-                )
-                return [dict(r) for r in cur.fetchall()]
 
     def _verify_department(self, cur, department_code: str) -> None:
         cur.execute("SELECT code FROM departments WHERE code = %s", (department_code,))
@@ -271,47 +173,7 @@ class DepartmentService:
         qrcode.make(registrant_id).save(buf, format="PNG")
         return buf.getvalue()
 
-    def get_attendance_spreadsheet(self, department_code: str) -> list[dict[str, Any]]:
-        with self._get_connection() as conn:
-            with conn.cursor() as cur:
-                self._verify_department(cur, department_code)
 
-                cur.execute(
-                    """SELECT r.id, r.name, r.email, r.phone, r.matriculation_number,
-                              a.date, a.present
-                       FROM registrants r
-                       LEFT JOIN attendance a ON a.registrant_id = r.id
-                       WHERE r.department_code = %s
-                       ORDER BY r.name, a.date""",
-                    (department_code,),
-                )
-                rows = cur.fetchall()
-
-        grouped: dict[str, dict[str, Any]] = {}
-        date_set: set[str] = set()
-
-        for row in rows:
-            rid = row["id"]
-            if rid not in grouped:
-                grouped[rid] = {
-                    "id": rid,
-                    "name": row["name"],
-                    "email": row["email"],
-                    "phone": row["phone"],
-                    "matriculation_number": row["matriculation_number"],
-                }
-            if row["date"] is not None:
-                date_set.add(str(row["date"]))
-                grouped[rid][str(row["date"])] = bool(row["present"])
-
-        all_dates = sorted(date_set)
-        return [
-            {
-                **grouped[rid],
-                **{d: grouped[rid].get(d) for d in all_dates},
-            }
-            for rid in sorted(grouped)
-        ]
 
 
 service = DepartmentService()
