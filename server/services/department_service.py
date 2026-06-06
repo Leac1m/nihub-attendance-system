@@ -11,7 +11,7 @@ import qrcode
 from db import UPLOAD_DIR, get_connection
 
 
-class CourseNotFoundError(Exception):
+class DepartmentNotFoundError(Exception):
     pass
 
 
@@ -27,52 +27,57 @@ class AttendanceAlreadyMarkedError(Exception):
     pass
 
 
-class CourseAlreadyExistsError(Exception):
+class DepartmentAlreadyExistsError(Exception):
     pass
 
 
-class CourseService:
+class DepartmentService:
     def _get_connection(self):
         return get_connection()
 
-    def create_course(self, code: str, name: str, description: str, duration: str) -> dict:
+    def create_department(self, code: str, name: str, duration: str) -> dict:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT code FROM courses WHERE code = %s", (code,))
+                cur.execute("SELECT code FROM departments WHERE code = %s", (code,))
                 if cur.fetchone():
-                    raise CourseAlreadyExistsError(f"A course with code '{code}' already exists")
+                    raise DepartmentAlreadyExistsError(
+                        f"A department with code '{code}' already exists",
+                    )
                 cur.execute(
-                    "INSERT INTO courses (code, name, description, duration) VALUES (%s, %s, %s, %s)",
-                    (code, name, description, duration),
+                    "INSERT INTO departments (code, name, duration) VALUES (%s, %s, %s)",
+                    (code, name, duration),
                 )
                 conn.commit()
-        return {"code": code, "name": name, "description": description, "duration": duration}
+        return {"code": code, "name": name, "duration": duration}
 
-    def list_courses(self) -> list[dict[str, Any]]:
+    def list_departments(self) -> list[dict[str, Any]]:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT code, name, description, duration FROM courses")
+                cur.execute("SELECT code, name, duration FROM departments")
                 return [dict(row) for row in cur.fetchall()]
 
-    def get_registrants(self, course_code: str) -> list[dict[str, Any]]:
+    def get_registrants(self, department_code: str) -> list[dict[str, Any]]:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT id, name, email, phone, matriculation_number, image_url FROM registrants WHERE course_code = %s",
-                    (course_code,),
+                    "SELECT id, name, email, phone, matriculation_number, image_url "
+                    "FROM registrants WHERE department_code = %s",
+                    (department_code,),
                 )
                 return [dict(row) for row in cur.fetchall()]
 
-    def get_registrant(self, course_code: str, registrant_id: str) -> dict[str, Any]:
+    def get_registrant(self, department_code: str, registrant_id: str) -> dict[str, Any]:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT id, name, email, phone, matriculation_number, image_url FROM registrants WHERE course_code = %s AND (id = %s OR matriculation_number = %s)",
-                    (course_code, registrant_id, registrant_id),
+                    "SELECT id, name, email, phone, matriculation_number, image_url "
+                    "FROM registrants "
+                    "WHERE department_code = %s AND (id = %s OR matriculation_number = %s)",
+                    (department_code, registrant_id, registrant_id),
                 )
                 row = cur.fetchone()
                 if not row:
-                    raise RegistrantNotFoundError("Registrant not found in this course")
+                    raise RegistrantNotFoundError("Registrant not found in this department")
 
                 registrant = dict(row)
                 cur.execute(
@@ -82,27 +87,27 @@ class CourseService:
                 registrant["attendance_days"] = [dict(r) for r in cur.fetchall()]
                 return registrant
 
-
-
-    def register(self, course_code: str, registrant: dict[str, Any]) -> dict[str, Any]:
+    def register(self, department_code: str, registrant: dict[str, Any]) -> dict[str, Any]:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
-                self._verify_course(cur, course_code)
+                self._verify_department(cur, department_code)
 
                 cur.execute(
-                    "SELECT id FROM registrants WHERE course_code = %s AND (email = %s OR matriculation_number = %s)",
-                    (course_code, registrant["email"], registrant["matriculation_number"]),
+                    "SELECT id FROM registrants "
+                    "WHERE department_code = %s AND (email = %s OR matriculation_number = %s)",
+                    (department_code, registrant["email"], registrant["matriculation_number"]),
                 )
                 if cur.fetchone():
-                    raise RegistrantExistsError("Registrant already in this course")
+                    raise RegistrantExistsError("Registrant already in this department")
 
                 new_id = f"ATT-{uuid4().hex[:8].upper()}"
                 cur.execute(
-                    """INSERT INTO registrants (id, course_code, name, email, phone, matriculation_number, image_url)
+                    """INSERT INTO registrants
+                       (id, department_code, name, email, phone, matriculation_number, image_url)
                        VALUES (%s, %s, %s, %s, %s, %s, %s)""",
                     (
                         new_id,
-                        course_code,
+                        department_code,
                         registrant["name"],
                         registrant["email"],
                         registrant["phone"],
@@ -120,18 +125,18 @@ class CourseService:
             "attendance_days": [],
         }
 
-    def delete_registrant(self, course_code: str, registrant_id: str) -> None:
+    def delete_registrant(self, department_code: str, registrant_id: str) -> None:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "DELETE FROM registrants WHERE id = %s AND course_code = %s",
-                    (registrant_id, course_code),
+                    "DELETE FROM registrants WHERE id = %s AND department_code = %s",
+                    (registrant_id, department_code),
                 )
                 conn.commit()
 
     def mark_attendance(
         self,
-        course_code: str,
+        department_code: str,
         matric_number: str,
         attendance_date: date,
         present: bool,
@@ -139,29 +144,30 @@ class CourseService:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
                 # If matric_number looks like a registrant ID (ATT-XXXXXXXX),
-                # resolve it across all courses first, then check enrollment.
+                # resolve it across all departments first, then check enrollment.
                 registrant_id = matric_number
                 if matric_number.startswith("ATT-"):
                     cur.execute(
-                        "SELECT id, course_code FROM registrants WHERE id = %s",
+                        "SELECT id, department_code FROM registrants WHERE id = %s",
                         (matric_number,),
                     )
                     row = cur.fetchone()
                     if not row:
                         raise RegistrantNotFoundError("Registrant not found")
                     registrant_id = row["id"]
-                    # Verify this registrant belongs to the specified course
-                    if row["course_code"] != course_code:
-                        raise RegistrantNotFoundError("Registrant not found in this course")
+                    # Verify this registrant belongs to the specified department
+                    if row["department_code"] != department_code:
+                        raise RegistrantNotFoundError("Registrant not found in this department")
                 else:
-                    # Legacy: look up by matriculation_number within this course
+                    # Legacy: look up by matriculation_number within this department
                     cur.execute(
-                        "SELECT id FROM registrants WHERE course_code = %s AND matriculation_number = %s",
-                        (course_code, matric_number),
+                        "SELECT id FROM registrants "
+                        "WHERE department_code = %s AND matriculation_number = %s",
+                        (department_code, matric_number),
                     )
                     row = cur.fetchone()
                     if not row:
-                        raise RegistrantNotFoundError("Registrant not found in this course")
+                        raise RegistrantNotFoundError("Registrant not found in this department")
                     registrant_id = row["id"]
 
                 attendance_date_str = str(attendance_date)
@@ -187,21 +193,21 @@ class CourseService:
 
     def mark_attendance_by_id(
         self,
-        course_code: str,
+        department_code: str,
         registrant_id: str,
         attendance_date: date,
         present: bool,
     ) -> list[dict[str, Any]]:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
-                # Verify registrant belongs to this course
+                # Verify registrant belongs to this department
                 cur.execute(
-                    "SELECT id FROM registrants WHERE id = %s AND course_code = %s",
-                    (registrant_id, course_code),
+                    "SELECT id FROM registrants WHERE id = %s AND department_code = %s",
+                    (registrant_id, department_code),
                 )
                 row = cur.fetchone()
                 if not row:
-                    raise RegistrantNotFoundError("Registrant not found in this course")
+                    raise RegistrantNotFoundError("Registrant not found in this department")
 
                 attendance_date_str = str(attendance_date)
 
@@ -224,36 +230,39 @@ class CourseService:
                 )
                 return [dict(r) for r in cur.fetchall()]
 
-    def _verify_course(self, cur, course_code: str) -> None:
-        cur.execute("SELECT code FROM courses WHERE code = %s", (course_code,))
+    def _verify_department(self, cur, department_code: str) -> None:
+        cur.execute("SELECT code FROM departments WHERE code = %s", (department_code,))
         if not cur.fetchone():
-            raise CourseNotFoundError("Course not found")
+            raise DepartmentNotFoundError("Department not found")
 
-    def _get_course(self, course_code: str) -> dict[str, Any]:
+    def _get_department(self, department_code: str) -> dict[str, Any]:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT code, name, description, duration FROM courses WHERE code = %s",
-                    (course_code,),
+                    "SELECT code, name, duration FROM departments WHERE code = %s",
+                    (department_code,),
                 )
                 row = cur.fetchone()
                 if not row:
-                    raise CourseNotFoundError("Course not found")
+                    raise DepartmentNotFoundError("Department not found")
                 return dict(row)
 
-    def delete_course(self, course_code: str) -> None:
+    def delete_department(self, department_code: str) -> None:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
-                self._verify_course(cur, course_code)
+                self._verify_department(cur, department_code)
                 # Fetch and delete registrant image files
-                cur.execute("SELECT image_url FROM registrants WHERE course_code = %s", (course_code,))
+                cur.execute(
+                    "SELECT image_url FROM registrants WHERE department_code = %s",
+                    (department_code,),
+                )
                 for (image_url,) in cur.fetchall():
                     if image_url:
                         file_path = UPLOAD_DIR / os.path.basename(image_url)
                         if file_path.exists():
                             file_path.unlink()
-                # Cascade delete in DB (courses -> registrants -> attendance)
-                cur.execute("DELETE FROM courses WHERE code = %s", (course_code,))
+                # Cascade delete in DB (departments -> registrants -> attendance)
+                cur.execute("DELETE FROM departments WHERE code = %s", (department_code,))
                 conn.commit()
 
     def _generate_qr_bytes(self, registrant_id: str) -> bytes:
@@ -262,19 +271,19 @@ class CourseService:
         qrcode.make(registrant_id).save(buf, format="PNG")
         return buf.getvalue()
 
-    def get_attendance_spreadsheet(self, course_code: str) -> list[dict[str, Any]]:
+    def get_attendance_spreadsheet(self, department_code: str) -> list[dict[str, Any]]:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
-                self._verify_course(cur, course_code)
+                self._verify_department(cur, department_code)
 
                 cur.execute(
                     """SELECT r.id, r.name, r.email, r.phone, r.matriculation_number,
                               a.date, a.present
                        FROM registrants r
                        LEFT JOIN attendance a ON a.registrant_id = r.id
-                       WHERE r.course_code = %s
+                       WHERE r.department_code = %s
                        ORDER BY r.name, a.date""",
-                    (course_code,),
+                    (department_code,),
                 )
                 rows = cur.fetchall()
 
@@ -305,4 +314,4 @@ class CourseService:
         ]
 
 
-service = CourseService()
+service = DepartmentService()

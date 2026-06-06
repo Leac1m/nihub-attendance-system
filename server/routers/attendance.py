@@ -12,9 +12,9 @@ from openpyxl.utils import get_column_letter
 
 from dependencies import get_current_staff
 from models import AttendanceByIdRecord, AttendanceRecord
-from services.course_service import (
+from services.department_service import (
     AttendanceAlreadyMarkedError,
-    CourseNotFoundError,
+    DepartmentNotFoundError,
     RegistrantNotFoundError,
     service,
 )
@@ -23,22 +23,22 @@ from services.staff_auth import StaffPublic
 router = APIRouter(tags=["attendance"])
 
 
-@router.post("/courses/{course_code}/attendance/{matric_number}")
+@router.post("/departments/{department_code}/attendance/{matric_number}")
 async def mark_attendance(
-    course_code: str,
+    department_code: str,
     matric_number: str,
     record: AttendanceRecord,
     staff: StaffPublic = Depends(get_current_staff),
 ):
     try:
         attendance = service.mark_attendance(
-            course_code=course_code,
+            department_code=department_code,
             matric_number=matric_number,
             attendance_date=record.date,
             present=record.present,
         )
         return {"message": "Attendance recorded", "attendance": attendance}
-    except CourseNotFoundError as exc:
+    except DepartmentNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except RegistrantNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
@@ -46,21 +46,21 @@ async def mark_attendance(
         raise HTTPException(status_code=400, detail=str(exc))
 
 
-@router.post("/courses/{course_code}/attendance", status_code=200)
+@router.post("/departments/{department_code}/attendance", status_code=200)
 async def mark_attendance_by_id(
-    course_code: str,
+    department_code: str,
     record: AttendanceByIdRecord,
     staff: StaffPublic = Depends(get_current_staff),
 ):
     try:
         attendance = service.mark_attendance_by_id(
-            course_code=course_code,
+            department_code=department_code,
             registrant_id=record.id,
             attendance_date=record.date,
             present=record.present,
         )
         return {"message": "Attendance recorded", "attendance": attendance}
-    except CourseNotFoundError as exc:
+    except DepartmentNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except RegistrantNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
@@ -68,15 +68,15 @@ async def mark_attendance_by_id(
         raise HTTPException(status_code=400, detail=str(exc))
 
 
-@router.get("/courses/{course_code}/attendance/spreadsheet")
+@router.get("/departments/{department_code}/attendance/spreadsheet")
 async def get_attendance_spreadsheet(
-    course_code: str,
+    department_code: str,
     staff: StaffPublic = Depends(get_current_staff),
 ):
     try:
         # ── 1. Raw data ─────────────────────────────────────────────────────────
-        data = service.get_attendance_spreadsheet(course_code)
-        course = service._get_course(course_code)
+        data = service.get_attendance_spreadsheet(department_code)
+        department = service._get_department(department_code)
 
         # Collect all unique date columns (anything that's not a registrant field)
         REGISTRANT_KEYS = {"id", "name", "email", "phone", "matriculation_number"}
@@ -113,16 +113,15 @@ async def get_attendance_spreadsheet(
 
         ws.merge_cells(f"A1:{last_col}1")
         title_cell = ws["A1"]
-        title_cell.value = f"{course.get('name', course_code)} — Attendance Register"
+        title_cell.value = f"{department.get('name', department_code)} — Attendance Register"
         _style(title_cell,
                font=Font(bold=True, size=14, color="4A0072", name="Calibri"),
                fill=META_FILL, align=LEFT)
         ws.row_dimensions[1].height = 28
 
         meta_pairs = [
-            ("Department Code",  course.get("code", course_code)),
-            ("Description",  course.get("description", "")),
-            ("Duration",     course.get("duration", "")),
+            ("Department Code",  department.get("code", department_code)),
+            ("Duration",     department.get("duration", "")),
             ("Generated",    datetime.now().strftime("%Y-%m-%d %H:%M")),
         ]
         for r_offset, (label, value) in enumerate(meta_pairs, start=2):
@@ -138,10 +137,10 @@ async def get_attendance_spreadsheet(
                 )
 
         # Blank separator row
-        ws.row_dimensions[6].height = 8
+        ws.row_dimensions[5].height = 8
 
-        # ── 4. Column headers (row 7) ─────────────────────────────────────────────
-        HEADER_ROW = 7
+        # ── 4. Column headers (row 6) ─────────────────────────────────────────────
+        HEADER_ROW = 6
         base_defs = [
             # (display label, db key, col width)
             ("#",              None,                     5),
@@ -220,7 +219,7 @@ async def get_attendance_spreadsheet(
         wb.save(buf)
         buf.seek(0)
 
-        safe_code = course_code.replace("/", "_")
+        safe_code = department_code.replace("/", "_")
         return Response(
             content=buf.getvalue(),
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -228,7 +227,7 @@ async def get_attendance_spreadsheet(
                 "Content-Disposition": f'attachment; filename="{safe_code}_attendance.xlsx"',
             },
         )
-    except CourseNotFoundError as exc:
+    except DepartmentNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except RegistrantNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))

@@ -19,9 +19,9 @@ def load_data() -> dict[str, Any]:
     """Load all data from PostgreSQL - used for migration compatibility."""
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT code, name, description, duration FROM courses")
-            courses = [dict(row) for row in cur.fetchall()]
-            return {"courses": courses, "staffs": []}
+            cur.execute("SELECT code, name, duration FROM departments")
+            departments = [dict(row) for row in cur.fetchall()]
+            return {"departments": departments, "staffs": []}
 
 
 def save_data(data: dict[str, Any]) -> None:

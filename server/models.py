@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class AttendanceRecord(BaseModel):
@@ -31,7 +31,9 @@ class RegistrantCreate(BaseModel):
 
 class LoginResponse(BaseModel):
     access_token: str
+    refresh_token: str | None = None
     token_type: str = "bearer"
+    expires_in: int | None = None
 
 
 class StaffRegisterRequest(BaseModel):
@@ -52,8 +54,41 @@ class StaffRegisterResponse(BaseModel):
     verification_expires_at: datetime
 
 
-class CourseCreate(BaseModel):
-    code: str
-    name: str
-    description: str = ""
-    duration: str = ""
+class DepartmentCreate(BaseModel):
+    code: str = Field(..., max_length=20)
+    name: str = Field(..., max_length=100)
+    duration: str = Field(default="", max_length=50)
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+class LogoutRequest(BaseModel):
+    refresh_token: str
+
+
+class RegistrantRegisterRequest(BaseModel):
+    """Body for ``POST /auth/registrants/register``.
+
+    The registrant is identified by ``(department_code, matriculation_number)``;
+    the rest of the fields (name / phone) are kept for symmetry with the
+    public registration form but the row's existing values are not
+    overwritten.
+    """
+    email: EmailStr
+    matriculation_number: str
+    name: str | None = None
+    phone: str | None = None
+    password: str = Field(..., min_length=8)
+    department_code: str
+
+
+class RegistrantLoginRequest(BaseModel):
+    matriculation_number: str
+    department_code: str
+    password: str
+
+
+class RegistrantVerifyRequest(BaseModel):
+    token: str

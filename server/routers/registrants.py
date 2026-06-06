@@ -9,8 +9,8 @@ from uuid import uuid4
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from db import UPLOAD_DIR
-from services.course_service import (
-    CourseNotFoundError,
+from services.department_service import (
+    DepartmentNotFoundError,
     RegistrantExistsError,
     service,
 )
@@ -21,9 +21,9 @@ logger = logging.getLogger("nihub.registrants")
 router = APIRouter(tags=["registrants"])
 
 
-@router.post("/courses/{course_code}/register")
-async def register_for_course(
-    course_code: str,
+@router.post("/departments/{department_code}/register")
+async def register_for_department(
+    department_code: str,
     name: str = Form(...),
     email: str = Form(...),
     phone: str = Form(...),
@@ -50,17 +50,19 @@ async def register_for_course(
             "image_url": f"/uploads/{image_filename}" if image_filename else None,
         }
 
-        created = service.register(course_code, registrant_data)
+        created = service.register(department_code, registrant_data)
 
-        # Fetch course info to include in registration email
+        # Fetch department info to include in registration email
         try:
-            course_info = service._get_course(course_code)
-        except CourseNotFoundError:
-            course_info = None
+            department_info = service._get_department(department_code)
+        except DepartmentNotFoundError:
+            department_info = None
 
         # Send registration email with QR code - rollback on failure
         try:
-            email_service.send_registration_email(created, created.get("qr_bytes", b""), course=course_info)
+            email_service.send_registration_email(
+                created, created.get("qr_bytes", b""), department=department_info,
+            )
         except Exception as exc:
             logger.warning(
                 "Failed to send registration email to %s: %s",
@@ -68,15 +70,18 @@ async def register_for_course(
                 exc,
             )
             # Rollback: delete the registrant and image
-            service.delete_registrant(course_code, created["id"])
+            service.delete_registrant(department_code, created["id"])
             if image_filename:
                 file_path = UPLOAD_DIR / image_filename
                 if file_path.exists():
                     file_path.unlink()
-            raise HTTPException(status_code=500, detail="Registration failed: could not send confirmation email")
+            raise HTTPException(
+                status_code=500,
+                detail="Registration failed: could not send confirmation email",
+            )
 
         return {"message": "Registration saved"}
-    except CourseNotFoundError as exc:
+    except DepartmentNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except RegistrantExistsError as exc:
         raise HTTPException(status_code=400, detail=str(exc))

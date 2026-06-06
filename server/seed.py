@@ -1,10 +1,10 @@
 """
 seed.py — Populate the NiHub attendance DB with realistic mock data.
 
-Courses:  2
-Students: 8 per course  (16 total)
-Dates:    10 class days per course (spread over the last 2 weeks)
-Pattern:  random present/absent per student per day (~80 % attendance rate)
+Departments: 2
+Students:    8 per department  (16 total)
+Dates:       10 class days per department (spread over the last 2 weeks)
+Pattern:     random present/absent per student per day (~80 % attendance rate)
 
 Run:  /path/to/venv/python3 seed.py
 """
@@ -34,22 +34,20 @@ def short_id() -> str:
 
 # ── Mock data ──────────────────────────────────────────────────────────────────
 
-COURSES = [
+DEPARTMENTS = [
     {
         "code": "CS101",
         "name": "Introduction to Computer Science",
-        "description": "Fundamentals of programming, algorithms, and data structures.",
         "duration": "16 weeks",
     },
     {
         "code": "DS301",
         "name": "Data Science & Machine Learning",
-        "description": "Applied ML, data wrangling, and model evaluation techniques.",
         "duration": "12 weeks",
     },
 ]
 
-# (name, email, phone, matric_no, course_code)
+# (name, email, phone, matric_no, department_code)
 STUDENTS = [
     # CS101 — 8 students
     ("Adaeze Okonkwo",    "adaeze.okonkwo@edu.ng",    "+23480123456", "CS2021001", "CS101"),
@@ -92,35 +90,35 @@ def run() -> None:
 
     print("🌱  Seeding database …\n")
 
-    # ── Courses ────────────────────────────────────────────────────────────────
-    for c in COURSES:
-        cur.execute("SELECT code FROM courses WHERE code = %s", (c["code"],))
+    # ── Departments ───────────────────────────────────────────────────────────
+    for c in DEPARTMENTS:
+        cur.execute("SELECT code FROM departments WHERE code = %s", (c["code"],))
         if cur.fetchone():
-            print(f"   ⏭  Course {c['code']} already exists, skipping.")
-            # Update description/duration so the seed reflects the richer text
+            print(f"   ⏭  Department {c['code']} already exists, skipping.")
+            # Update name/duration so the seed reflects the richer text
             cur.execute(
-                "UPDATE courses SET name=%s, description=%s, duration=%s WHERE code=%s",
-                (c["name"], c["description"], c["duration"], c["code"]),
+                "UPDATE departments SET name=%s, duration=%s WHERE code=%s",
+                (c["name"], c["duration"], c["code"]),
             )
         else:
             cur.execute(
-                "INSERT INTO courses (code, name, description, duration) "
-                "VALUES (%s, %s, %s, %s)",
-                (c["code"], c["name"], c["description"], c["duration"]),
+                "INSERT INTO departments (code, name, duration) "
+                "VALUES (%s, %s, %s)",
+                (c["code"], c["name"], c["duration"]),
             )
-            print(f"   ✅  Created course: {c['code']} — {c['name']}")
+            print(f"   ✅  Created department: {c['code']} — {c['name']}")
 
     # ── Registrants & attendance ───────────────────────────────────────────────
-    dates_per_course: dict[str, list[date]] = {
-        c["code"]: class_dates(10) for c in COURSES
+    dates_per_department: dict[str, list[date]] = {
+        c["code"]: class_dates(10) for c in DEPARTMENTS
     }
 
-    for (name, email, phone, matric, course_code) in STUDENTS:
+    for (name, email, phone, matric, department_code) in STUDENTS:
         # Look up or insert registrant
         cur.execute(
             "SELECT id FROM registrants "
-            "WHERE course_code = %s AND matriculation_number = %s",
-            (course_code, matric),
+            "WHERE department_code = %s AND matriculation_number = %s",
+            (department_code, matric),
         )
         row = cur.fetchone()
         if row:
@@ -130,14 +128,14 @@ def run() -> None:
             registrant_id = short_id()
             cur.execute(
                 "INSERT INTO registrants "
-                "(id, course_code, name, email, phone, matriculation_number) "
+                "(id, department_code, name, email, phone, matriculation_number) "
                 "VALUES (%s, %s, %s, %s, %s, %s)",
-                (registrant_id, course_code, name, email, phone, matric),
+                (registrant_id, department_code, name, email, phone, matric),
             )
-            print(f"   ✅  Registered {name} ({matric}) → {course_code}")
+            print(f"   ✅  Registered {name} ({matric}) → {department_code}")
 
         # Attendance records — skip days that already exist
-        for d in dates_per_course[course_code]:
+        for d in dates_per_department[department_code]:
             cur.execute(
                 "SELECT id FROM attendance "
                 "WHERE registrant_id = %s AND date = %s",
@@ -158,9 +156,9 @@ def run() -> None:
 
     sample_dates = class_dates(10)
     print("\n🎉  Seed complete!")
-    print(f"   Courses      : {len(COURSES)}")
+    print(f"   Departments  : {len(DEPARTMENTS)}")
     print(f"   Registrants  : {len(STUDENTS)}")
-    print(f"   Class days   : {len(sample_dates)} per course")
+    print(f"   Class days   : {len(sample_dates)} per department")
     print(f"   Date range   : {sample_dates[0]}  →  {sample_dates[-1]}")
 
 

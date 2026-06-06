@@ -35,7 +35,15 @@ load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 from db import UPLOAD_DIR  # noqa: E402  (after load_dotenv intentionally)
 
 from logging_config import configure_logging, request_id_ctx  # noqa: E402
-from routers import admin, attendance, auth, departments, internal, registrants  # noqa: E402, F401
+from routers import (  # noqa: E402, F401
+    _legacy_courses_shim,
+    admin,
+    attendance,
+    auth,
+    departments,
+    internal,
+    registrants,
+)
 
 logger = logging.getLogger("nihub.main")
 
@@ -143,3 +151,7 @@ app.include_router(departments.router)
 app.include_router(registrants.router)
 app.include_router(attendance.router)
 app.include_router(admin.router)
+# Phase 2: legacy /courses/* → /departments/* shim.  Must come after the
+# real /departments/* router so the new endpoints match first; anything
+# that falls through to here is a 301 redirect to the canonical path.
+app.include_router(_legacy_courses_shim.router)

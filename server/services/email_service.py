@@ -32,10 +32,14 @@ def is_configured() -> bool:
     return bool(cfg["host"] and cfg["username"] and cfg["password"])
 
 
-
 def _sender_address() -> str:
     cfg = _get_config()
     return cfg["from"] or cfg["username"]
+
+
+def _web_base_url() -> str:
+    """Base URL for the public web portal — used in registrant email links."""
+    return os.getenv("WEB_BASE_URL", "http://localhost:8080").rstrip("/")
 
 
 class EmailService:
@@ -95,7 +99,7 @@ class EmailService:
         self._send(msg)
 
     def send_registration_email(
-        self, registrant: dict, qr_bytes: bytes, *, course: dict | None = None
+        self, registrant: dict, qr_bytes: bytes, *, department: dict | None = None,
     ) -> None:
         if not self.is_configured():
             logger.warning(
@@ -109,32 +113,27 @@ class EmailService:
         name = registrant["name"]
         m_id = registrant["id"]
 
-        # Build course/department detail strings
-        department_name = course.get("name", "") if course else ""
-        department_code = course.get("code", "") if course else ""
-        department_description = course.get("description", "") if course else ""
-        department_duration = course.get("duration", "") if course else ""
+        # Build department detail strings — no description in Phase 2.
+        department_name = department.get("name", "") if department else ""
+        department_code = department.get("code", "") if department else ""
+        department_duration = department.get("duration", "") if department else ""
 
         program_text_block = ""
         program_html_block = ""
         if department_name or department_code:
             program_text_block = (
                 f"\nDepartment Details:\n"
-                f"  Name:        {department_name}\n"
-                f"  Code:        {department_code}\n"
+                f"  Name:     {department_name}\n"
+                f"  Code:     {department_code}\n"
             )
-            if department_description:
-                program_text_block += f"  Description: {department_description}\n"
             if department_duration:
-                program_text_block += f"  Duration:    {department_duration}\n"
+                program_text_block += f"  Duration: {department_duration}\n"
 
             program_html_block = (
                 f"<p><strong>Department Details:</strong><br/>"
                 f"Name: {department_name}<br/>"
                 f"Code: <code>{department_code}</code>"
             )
-            if department_description:
-                program_html_block += f"<br/>Description: {department_description}"
             if department_duration:
                 program_html_block += f"<br/>Duration: {department_duration}"
             program_html_block += "</p>"
@@ -190,10 +189,119 @@ class EmailService:
 
         self._send(msg)
 
+    def send_registrant_verification_email(
+        self,
+        *,
+        email: str,
+        matriculation_number: str,
+        department_code: str,
+        verification_url: str,
+    ) -> None:
+        """Send the 24h single-use verification link for a new registrant account."""
+        if not self.is_configured():
+            logger.warning(
+                "SMTP not configured — skipping registrant verification email for %s",
+                email,
+            )
+            return
+
+        cfg = _get_config()
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Verify your NIHUB portal account"
+        msg["From"] = _sender_address()
+        msg["To"] = email
+
+        body_text = (
+            f"Hi,\n\n"
+            f"You (or someone on your behalf) requested portal access for:\n"
+            f"  Matriculation number: {matriculation_number}\n"
+            f"  Department:           {department_code}\n\n"
+            f"Click the link below within 24 hours to verify your email "
+            f"and activate your account:\n\n"
+            f"  {verification_url}\n\n"
+            f"If you did not make this request you can safely ignore this email.\n"
+        )
+
+        html_body = (
+            f"<html><body style='font-family: Arial, sans-serif; color: #333;'>"
+            f"<p>Hi,</p>"
+            f"<p>You (or someone on your behalf) requested portal access for:</p>"
+            f"<ul>"
+            f"<li><strong>Matriculation number:</strong> {matriculation_number}</li>"
+            f"<li><strong>Department:</strong> <code>{department_code}</code></li>"
+            f"</ul>"
+            f"<p>Click the button below within <strong>24 hours</strong> to verify "
+            f"your email and activate your account:</p>"
+            f"<p><a href='{verification_url}' "
+            f"style='display:inline-block;padding:10px 18px;background:#4A0072;"
+            f"color:#fff;text-decoration:none;border-radius:4px;'>"
+            f"Verify my email</a></p>"
+            f"<p>Or copy and paste this link:<br/>"
+            f"<code style='word-break:break-all;'>{verification_url}</code></p>"
+            f"<p style='color:#888;font-size:12px;'>If you did not make this "
+            f"request you can safely ignore this email.</p>"
+            f"</body></html>"
+        )
+
+        msg.attach(MIMEText(body_text, "plain"))
+        msg.attach(MIMEText(html_body, "html"))
+
+        self._send(msg)
+
+    def send_registrant_welcome_email(
+        self,
+        *,
+        email: str,
+        name: str,
+        department_code: str,
+        matriculation_number: str,
+    ) -> None:
+        """Send a short welcome once a registrant is fully verified."""
+        if not self.is_configured():
+            logger.warning(
+                "SMTP not configured — skipping registrant welcome email for %s",
+                email,
+            )
+            return
+
+        cfg = _get_config()
+        login_url = f"{_web_base_url()}/portal/login"
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Welcome to the NIHUB portal"
+        msg["From"] = _sender_address()
+        msg["To"] = email
+
+        body_text = (
+            f"Hi {name},\n\n"
+            f"Your NIHUB portal account is active.\n"
+            f"  Matriculation number: {matriculation_number}\n"
+            f"  Department:           {department_code}\n\n"
+            f"You can sign in at:\n  {login_url}\n"
+        )
+
+        html_body = (
+            f"<html><body style='font-family: Arial, sans-serif; color: #333;'>"
+            f"<p>Hi <strong>{name}</strong>,</p>"
+            f"<p>Your NIHUB portal account is active.</p>"
+            f"<ul>"
+            f"<li><strong>Matriculation number:</strong> {matriculation_number}</li>"
+            f"<li><strong>Department:</strong> <code>{department_code}</code></li>"
+            f"</ul>"
+            f"<p>You can sign in at "
+            f"<a href='{login_url}'>{login_url}</a>.</p>"
+            f"</body></html>"
+        )
+
+        msg.attach(MIMEText(body_text, "plain"))
+        msg.attach(MIMEText(html_body, "html"))
+
+        self._send(msg)
 
     def _send(self, msg: MIMEMultipart) -> None:
         cfg = _get_config()
-        
+
         # Scenario 1: Modern Secure SMTP with STARTTLS upgrade (Usually Port 587)
         if cfg["use_tls"] and cfg["port"] != 465:
             context = ssl.create_default_context()
@@ -204,7 +312,7 @@ class EmailService:
                 if cfg["username"] and cfg["password"]:
                     server.login(cfg["username"], cfg["password"])
                 server.sendmail(msg["From"], msg["To"], msg.as_string())
-                
+
         # Scenario 2: Legacy Secure SMTP wrapped in implicit SSL (Usually Port 465)
         elif cfg["port"] == 465:
             context = ssl.create_default_context()
@@ -212,7 +320,7 @@ class EmailService:
                 if cfg["username"] and cfg["password"]:
                     server.login(cfg["username"], cfg["password"])
                 server.sendmail(msg["From"], msg["To"], msg.as_string())
-                
+
         # Scenario 3: Local Dev / Unencrypted mail relays (Usually Port 25 or 1025)
         else:
             with smtplib.SMTP(cfg["host"], cfg["port"]) as server:
