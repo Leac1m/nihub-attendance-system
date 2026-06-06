@@ -1,0 +1,81 @@
+# Global options
+{
+    admin off
+    auto_https off
+    log default {
+        output file /var/log/caddy/access.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+    }
+    # NB: Caddy's Caddyfile adapter does not expose `protocol h1` inside
+    # `servers` (or anywhere else in the file).  For a plain-HTTP site on :80
+    # with `auto_https off`, only HTTP/1.1 is negotiated anyway, so omitting
+    # the block is functionally equivalent.  If h1-only is needed on a TLS
+    # listener later, switch to a JSON Caddy config.
+}
+
+# TODO(prod): replace `:80` with the real domain (e.g. `attendance.nihub.example.com`)
+# to enable Caddy's automatic HTTPS.  For local dev the catch-all `:80` is fine.
+:80 {
+    @api path /api/*
+    @uploads path /uploads/*
+    @clientlogs path /_client-logs /_client-logs/*
+    @health path /health /health/*
+
+    handle @api {
+        reverse_proxy nihub-server:8000 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            transport http {
+                dial_timeout 5s
+                response_header_timeout 30s
+            }
+        }
+    }
+
+    handle @uploads {
+        reverse_proxy nihub-server:8000 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    handle @clientlogs {
+        reverse_proxy nihub-server:8000 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    handle @health {
+        reverse_proxy nihub-server:8000 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Default: frontend (everything else falls through to the SPA)
+    handle {
+        reverse_proxy nihub-frontend:8080 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            transport http {
+                dial_timeout 5s
+                response_header_timeout 30s
+            }
+        }
+    }
+
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+    }
+}
