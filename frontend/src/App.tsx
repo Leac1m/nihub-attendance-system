@@ -1,13 +1,9 @@
 import './brand.css';
-import './App.css';
-import { AttendeeForm } from './AttendeeForm';
+import './styles/pages.css';
+import { App as RouterApp } from './router';
 
 function App() {
-  return (
-    <main className="app">
-      <AttendeeForm />
-    </main>
-  );
+  return <RouterApp />;
 }
 
 export default App;

@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import './AttendeeForm.css';
-import logo from './assets/logo.jpg';
-import { getCourses, registerAttendee, type CourseOption } from './services/attendeeAPI';
+import logo from '../assets/logo.jpg';
+import {
+  registerAttendee,
+  getCourses,
+  type CourseOption,
+} from '../services/attendeeAPI';
 
 interface AttendeeFormData {
   name: string;
@@ -124,6 +128,7 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
     return () => {
       isMounted = false;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- selectedCourseCode is only used as initial value check; we intentionally don't re-run when it changes
   }, []);
 
   const validateStep1 = () => {
@@ -198,7 +203,8 @@ export function AttendeeForm({ courseCode = 'CS101', onSuccess }: AttendeeFormPr
     setPhotoPreview(null);
     setPhotoFile(null);
     setErrors((prev) => {
-      const { photo, ...rest } = prev;
+      const { photo: _unused, ...rest } = prev;
+      void _unused;
       return rest;
     });
 
