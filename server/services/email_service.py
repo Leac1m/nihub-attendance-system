@@ -8,6 +8,31 @@ from email.mime.text import MIMEText
 
 logger = logging.getLogger(__name__)
 
+_TPL_PATH = os.path.join(os.path.dirname(__file__), "brand", "email-template.html")
+
+
+def _load_template() -> str:
+    with open(_TPL_PATH, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def _render_email(*, subject: str, content: str, cta_url: str = "", cta_text: str = "") -> str:
+    tpl = _load_template()
+    rendered = tpl.replace("{subject}", subject)
+    rendered = rendered.replace("{content}", content)
+    if cta_url:
+        cta_block = (
+            '<div style="margin-top:28px;">'
+            f'<a href="{cta_url}" style="display:inline-block;background-color:#70008B;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:600;padding:14px 28px;border-radius:8px;">{cta_text}</a>'
+            '</div>'
+        )
+        rendered = rendered.replace("{cta_url}", cta_block)
+        rendered = rendered.replace("{/cta_url}", "")
+    else:
+        rendered = rendered.replace("{cta_url}", "")
+        rendered = rendered.replace("{/cta_url}", "")
+    return rendered
+
 
 def _get_config() -> dict:
     """Read SMTP config lazily so os.getenv() runs after load_dotenv() or
@@ -25,7 +50,6 @@ def _get_config() -> dict:
 
 def is_configured() -> bool:
     cfg = _get_config()
-    # It is configured if host is set AND (credentials are provided OR the host/port has been customized for local dev)
     is_customized = "SMTP_HOST" in os.environ or "SMTP_PORT" in os.environ
     if is_customized:
         return bool(cfg["host"])
@@ -82,15 +106,17 @@ class EmailService:
             f"Expires At: {expires_at}\n"
         )
 
-        html_body = (
-            f"<html><body style='font-family: Arial, sans-serif; color: #333;'>"
+        content_html = (
             f"<p>A new staff account was created.</p>"
             f"<p><strong>Username:</strong> {username}<br/>"
             f"<strong>Email:</strong> {email}<br/>"
-            f"<strong>Verification PIN:</strong> <code style='font-size: 18px;'>{verification_pin}</code><br/>"
+            f"<strong>Verification PIN:</strong> <code style='font-size:18px;'>{verification_pin}</code><br/>"
             f"<strong>Expires At:</strong> {expires_at}</p>"
             f"<p>Share this code with the staff member so they can verify their account.</p>"
-            f"</body></html>"
+        )
+        html_body = _render_email(
+            subject=f"NIHUB staff verification code for {username}",
+            content=content_html,
         )
 
         msg.attach(MIMEText(body_text, "plain"))
@@ -113,7 +139,6 @@ class EmailService:
         name = registrant["name"]
         m_id = registrant["id"]
 
-        # Build department detail strings — no description in Phase 2.
         department_name = department.get("name", "") if department else ""
         department_code = department.get("code", "") if department else ""
         department_duration = department.get("duration", "") if department else ""
@@ -154,8 +179,7 @@ class EmailService:
             f"Please keep this email for your records.\n"
         )
 
-        html_body = (
-            f"<html><body style='font-family: Arial, sans-serif; color: #333;'>"
+        content_html = (
             f"<p>Hi <strong>{name}</strong>,</p>"
             f"<p>You have been successfully registered.</p>"
             f"{program_html_block}"
@@ -163,7 +187,10 @@ class EmailService:
             f"<p>Show your QR code below on the day of the department:</p>"
             f'<p><img src="cid:qr_code" alt="Your QR Code" '
             f'style="width:200px;height:200px;border:1px solid #ccc;"/></p>'
-            f"</body></html>"
+        )
+        html_body = _render_email(
+            subject=msg["Subject"],
+            content=content_html,
         )
 
         alternative = MIMEMultipart("alternative")
@@ -223,8 +250,7 @@ class EmailService:
             f"If you did not make this request you can safely ignore this email.\n"
         )
 
-        html_body = (
-            f"<html><body style='font-family: Arial, sans-serif; color: #333;'>"
+        content_html = (
             f"<p>Hi,</p>"
             f"<p>You (or someone on your behalf) requested portal access for:</p>"
             f"<ul>"
@@ -233,15 +259,12 @@ class EmailService:
             f"</ul>"
             f"<p>Click the button below within <strong>24 hours</strong> to verify "
             f"your email and activate your account:</p>"
-            f"<p><a href='{verification_url}' "
-            f"style='display:inline-block;padding:10px 18px;background:#4A0072;"
-            f"color:#fff;text-decoration:none;border-radius:4px;'>"
-            f"Verify my email</a></p>"
-            f"<p>Or copy and paste this link:<br/>"
-            f"<code style='word-break:break-all;'>{verification_url}</code></p>"
-            f"<p style='color:#888;font-size:12px;'>If you did not make this "
-            f"request you can safely ignore this email.</p>"
-            f"</body></html>"
+        )
+        html_body = _render_email(
+            subject="Verify your NIHUB portal account",
+            content=content_html,
+            cta_url=verification_url,
+            cta_text="Verify my email",
         )
 
         msg.attach(MIMEText(body_text, "plain"))
@@ -281,8 +304,7 @@ class EmailService:
             f"You can sign in at:\n  {login_url}\n"
         )
 
-        html_body = (
-            f"<html><body style='font-family: Arial, sans-serif; color: #333;'>"
+        content_html = (
             f"<p>Hi <strong>{name}</strong>,</p>"
             f"<p>Your NIHUB portal account is active.</p>"
             f"<ul>"
@@ -291,7 +313,12 @@ class EmailService:
             f"</ul>"
             f"<p>You can sign in at "
             f"<a href='{login_url}'>{login_url}</a>.</p>"
-            f"</body></html>"
+        )
+        html_body = _render_email(
+            subject="Welcome to the NIHUB portal",
+            content=content_html,
+            cta_url=login_url,
+            cta_text="Open NIHUB Portal",
         )
 
         msg.attach(MIMEText(body_text, "plain"))
@@ -302,7 +329,6 @@ class EmailService:
     def _send(self, msg: MIMEMultipart) -> None:
         cfg = _get_config()
 
-        # Scenario 1: Modern Secure SMTP with STARTTLS upgrade (Usually Port 587)
         if cfg["use_tls"] and cfg["port"] != 465:
             context = ssl.create_default_context()
             with smtplib.SMTP(cfg["host"], cfg["port"]) as server:
@@ -313,7 +339,6 @@ class EmailService:
                     server.login(cfg["username"], cfg["password"])
                 server.sendmail(msg["From"], msg["To"], msg.as_string())
 
-        # Scenario 2: Legacy Secure SMTP wrapped in implicit SSL (Usually Port 465)
         elif cfg["port"] == 465:
             context = ssl.create_default_context()
             with smtplib.SMTP_SSL(cfg["host"], cfg["port"], context=context) as server:
@@ -321,7 +346,6 @@ class EmailService:
                     server.login(cfg["username"], cfg["password"])
                 server.sendmail(msg["From"], msg["To"], msg.as_string())
 
-        # Scenario 3: Local Dev / Unencrypted mail relays (Usually Port 25 or 1025)
         else:
             with smtplib.SMTP(cfg["host"], cfg["port"]) as server:
                 if cfg["username"] and cfg["password"]:
@@ -332,7 +356,6 @@ class EmailService:
 
 email_service = EmailService()
 
-# Startup log — visible in container output so you can confirm the env vars were injected.
 _cfg = _get_config()
 if email_service.is_configured():
     logger.info(

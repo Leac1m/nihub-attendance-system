@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+// Colors sourced from brand/colors.json — do not edit manually
+
 /// App color palette matching the React Native NIHUB design
 class AppColors {
   AppColors._();
