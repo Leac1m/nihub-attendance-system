@@ -7,7 +7,8 @@ from typing import Any
 from uuid import uuid4
 
 import qrcode
-from db import get_connection, UPLOAD_DIR
+
+from db import UPLOAD_DIR, get_connection
 
 
 class CourseNotFoundError(Exception):
@@ -302,3 +303,6 @@ class CourseService:
             }
             for rid in sorted(grouped)
         ]
+
+
+service = CourseService()

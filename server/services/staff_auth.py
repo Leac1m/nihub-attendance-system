@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 import secrets
@@ -197,3 +198,18 @@ class StaffPublic(BaseModel):
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
+
+def _build_default_auth_service() -> StaffAuthService:
+    """Construct a :class:`StaffAuthService` using the current ``JWT_SECRET``.
+
+    ``load_dotenv`` must have been called before this runs (it is, in
+    :mod:`main`).  Falls back to a development secret if the env var is
+    not set.
+    """
+    return StaffAuthService(secret_key=os.getenv("JWT_SECRET", "dev-secret-change-me"))
+
+
+# Singleton instance shared across the app.  Re-importing this module is
+# safe — the same env-derived secret is reused.
+auth_service: StaffAuthService = _build_default_auth_service()

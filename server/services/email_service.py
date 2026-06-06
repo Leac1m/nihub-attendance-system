@@ -236,4 +236,3 @@ else:
         "Email service NOT configured — SMTP_USERNAME/SMTP_PASSWORD missing. "
         "Emails will be skipped. Set them in server/.env and restart."
     )
-

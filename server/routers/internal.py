@@ -7,7 +7,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
-from ..db import get_connection
+from db import get_connection
 
 logger = logging.getLogger("nihub.internal")
 
