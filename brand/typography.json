@@ -1,0 +1,4 @@
+{
+  "display": { "fontFamily": "Plus Jakarta Sans", "fallback": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+  "ui": { "fontFamily": "Inter", "fallback": "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }
+}

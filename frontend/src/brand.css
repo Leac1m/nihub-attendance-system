@@ -1,72 +1,70 @@
-/* Brand Design System - Vibrant Productivity */
+/* Brand Design System - NIHUB
+   Colors sourced from brand/colors.json — do not edit manually
+*/
 
 :root {
-  /* Colors */
-  --color-surface: #f8f9fa;
-  --color-surface-dim: #d9dadb;
-  --color-surface-bright: #f8f9fa;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f3f4f5;
-  --color-surface-container: #edeeef;
-  --color-surface-container-high: #e7e8e9;
-  --color-surface-container-highest: #e1e3e4;
-  --color-on-surface: #191c1d;
-  --color-on-surface-variant: #504251;
-  --color-inverse-surface: #2e3132;
-  --color-inverse-on-surface: #f0f1f2;
-  --color-outline: #827282;
-  --color-outline-variant: #d3c1d2;
-  --color-surface-tint: #942cb0;
-  
-  --color-primary: #70008b;
-  --color-on-primary: #ffffff;
-  --color-primary-container: #8e24aa;
-  --color-on-primary-container: #f7bcff;
-  --color-inverse-primary: #f3aeff;
-  
-  --color-secondary: #0059bb;
-  --color-on-secondary: #ffffff;
-  --color-secondary-container: #0070ea;
-  --color-on-secondary-container: #fefcff;
-  
-  --color-tertiary: #705d07;
-  --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #c2aa52;
-  --color-on-tertiary-container: #4c3e00;
-  
-  --color-error: #ba1a1a;
-  --color-on-error: #ffffff;
-  --color-error-container: #ffdad6;
-  --color-on-error-container: #93000a;
-  
-  --color-background: #f8f9fa;
-  --color-on-background: #191c1d;
-  --color-surface-variant: #e1e3e4;
+  /* === Colors: brand/colors.json === */
 
-  /* Typography */
+  /* Primary purple family */
+  --color-primary-deep: #70008B;
+  --color-primary: #8B2CBA;
+  --color-primary-light: #8E24AA;
+
+  /* Secondary & tertiary */
+  --color-secondary: #0059BB;
+  --color-success: #0070EA;
+
+  /* Error */
+  --color-error: #BA1A1A;
+
+  /* Backgrounds */
+  --color-background: #F8F9FA;
+  --color-surface: #F8F9FA;
+  --color-surface-dim: #D9DADB;
+  --color-surface-bright: #F8F9FA;
+  --color-surface-container-lowest: #FFFFFF;
+  --color-surface-container-low: #F3F4F5;
+  --color-surface-container: #EDEEEF;
+  --color-surface-container-high: #E7E8E9;
+  --color-surface-container-highest: #E1E3E4;
+  --color-surface-tint: #942CB0;
+
+  /* Text */
+  --color-on-surface: #191C1D;
+  --color-on-surface-variant: #504251;
+  --color-text-muted: #827282;
+  --color-inverse-surface: #2E3132;
+  --color-inverse-on-surface: #F0F1F2;
+  --color-on-primary: #FFFFFF;
+
+  /* Borders */
+  --color-outline: #827282;
+  --color-outline-variant: #D3C1D2;
+
+  /* === Typography === */
   --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  
+
   --font-headline-lg-size: 24px;
   --font-headline-lg-weight: 700;
   --font-headline-lg-line-height: 32px;
   --font-headline-lg-letter-spacing: -0.02em;
-  
+
   --font-headline-md-size: 20px;
   --font-headline-md-weight: 600;
   --font-headline-md-line-height: 28px;
-  
+
   --font-body-md-size: 16px;
   --font-body-md-weight: 400;
   --font-body-md-line-height: 24px;
-  
+
   --font-body-sm-size: 14px;
   --font-body-sm-weight: 400;
   --font-body-sm-line-height: 20px;
-  
+
   --font-label-lg-size: 14px;
   --font-label-lg-weight: 600;
   --font-label-lg-line-height: 20px;
-  
+
   --font-label-md-size: 12px;
   --font-label-md-weight: 500;
   --font-label-md-line-height: 16px;
@@ -98,5 +96,5 @@
 body {
   font-family: var(--font-family);
   background-color: var(--color-background);
-  color: var(--color-on-background);
+  color: var(--color-on-surface);
 }
