@@ -3,15 +3,19 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../domain/department_model.dart';
 import '../../../../core/theme/app_theme.dart';
 
+enum TodayStatus { checkedIn, checkedOut, notCheckedIn }
+
 enum RegistrantAction { checkIn, checkOut, viewDetails }
 
 class RegistrantListTile extends StatelessWidget {
   final Registrant registrant;
+  final TodayStatus todayStatus;
   final void Function(RegistrantAction action) onAction;
 
   const RegistrantListTile({
     super.key,
     required this.registrant,
+    required this.todayStatus,
     required this.onAction,
   });
 
@@ -31,9 +35,30 @@ class RegistrantListTile extends StatelessWidget {
             _buildAvatar(),
             const SizedBox(width: AppSpacing.md),
             Expanded(child: _buildInfo(context)),
+            _buildStatusDot(),
             _buildTrailing(context),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusDot() {
+    Color color;
+    switch (todayStatus) {
+      case TodayStatus.checkedIn:
+        color = AppColors.secondary;
+      case TodayStatus.checkedOut:
+        color = AppColors.error;
+      case TodayStatus.notCheckedIn:
+        color = AppColors.textMuted;
+    }
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
       ),
     );
   }
@@ -200,26 +225,39 @@ class RegistrantListTile extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Divider(height: 1),
-              _sheetTile(
-                context,
-                icon: Icons.check_circle_outline,
-                color: AppColors.secondary,
-                label: 'Check in (present)',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onAction(RegistrantAction.checkIn);
-                },
-              ),
-              _sheetTile(
-                context,
-                icon: Icons.cancel_outlined,
-                color: AppColors.error,
-                label: 'Check out (absent)',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onAction(RegistrantAction.checkOut);
-                },
-              ),
+              if (todayStatus == TodayStatus.notCheckedIn)
+                _sheetTile(
+                  context,
+                  icon: Icons.check_circle_outline,
+                  color: AppColors.secondary,
+                  label: 'Check in',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onAction(RegistrantAction.checkIn);
+                  },
+                )
+              else if (todayStatus == TodayStatus.checkedIn)
+                _sheetTile(
+                  context,
+                  icon: Icons.cancel_outlined,
+                  color: AppColors.error,
+                  label: 'Check out',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onAction(RegistrantAction.checkOut);
+                  },
+                )
+              else
+                _sheetTile(
+                  context,
+                  icon: Icons.check_circle_outline,
+                  color: AppColors.secondary,
+                  label: 'Check in',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onAction(RegistrantAction.checkIn);
+                  },
+                ),
               _sheetTile(
                 context,
                 icon: Icons.info_outline,

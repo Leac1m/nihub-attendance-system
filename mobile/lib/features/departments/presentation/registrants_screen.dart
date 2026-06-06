@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
+
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/notification_service.dart';
 import '../domain/department_model.dart';
@@ -21,11 +21,44 @@ class RegistrantsScreen extends ConsumerStatefulWidget {
 class _RegistrantsScreenState extends ConsumerState<RegistrantsScreen> {
   final _searchController = TextEditingController();
   String _query = '';
+  Map<String, TodayStatus> _todayStatusMap = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodayStatuses();
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadTodayStatuses() async {
+    try {
+      final api = ref.read(departmentsApiProvider);
+      final today = DateTime.now();
+      final sessions = await api.getSessionsForDate(widget.departmentCode, today);
+      final Map<String, TodayStatus> statusMap = {};
+      for (final session in sessions) {
+        final rid = session['registrant_id'] as String;
+        final stype = session['session_type'] as String;
+        statusMap[rid] = stype == 'in' ? TodayStatus.checkedIn : TodayStatus.checkedOut;
+      }
+      if (mounted) {
+        setState(() {
+          _todayStatusMap = statusMap;
+
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+
+        });
+      }
+    }
   }
 
   void _onSearchChanged(String value) {
@@ -126,8 +159,10 @@ class _RegistrantsScreenState extends ConsumerState<RegistrantsScreen> {
                           const SizedBox(height: AppSpacing.sm),
                       itemBuilder: (context, i) {
                         final r = filtered[i];
+                        final status = _todayStatusMap[r.id] ?? TodayStatus.notCheckedIn;
                         return RegistrantListTile(
                           registrant: r,
+                          todayStatus: status,
                           onAction: (action) =>
                               _handleAction(context, r, action),
                         );
@@ -227,21 +262,16 @@ class _RegistrantsScreenState extends ConsumerState<RegistrantsScreen> {
     RegistrantAction action,
   ) async {
     final api = ref.read(departmentsApiProvider);
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
     try {
       switch (action) {
         case RegistrantAction.checkIn:
-          await api.markAttendanceById(
-              widget.departmentCode, r.id, true, date: today);
-          NotificationService.showSuccess(
-              '${r.name} marked present for today');
+          await api.checkIn(widget.departmentCode, r.id);
+          NotificationService.showSuccess('${r.name} checked in');
           break;
         case RegistrantAction.checkOut:
-          await api.markAttendanceById(
-              widget.departmentCode, r.id, false, date: today);
-          NotificationService.showSuccess(
-              '${r.name} marked absent for today');
+          await api.checkOut(widget.departmentCode, r.id);
+          NotificationService.showSuccess('${r.name} checked out');
           break;
         case RegistrantAction.viewDetails:
           if (context.mounted) {
@@ -252,6 +282,7 @@ class _RegistrantsScreenState extends ConsumerState<RegistrantsScreen> {
           return;
       }
       ref.invalidate(registrantsProvider(widget.departmentCode));
+      await _loadTodayStatuses();
     } catch (e) {
       NotificationService.showError(e);
     }
