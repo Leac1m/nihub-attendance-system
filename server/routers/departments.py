@@ -1,19 +1,15 @@
-# TODO(phase 2): rename to /departments
-# The current paths use ``/courses`` for backward compatibility.  A later
-# phase will introduce the new ``/departments`` path alongside the old
-# one and then deprecate it.
-
-"""Department/course management endpoints."""
+# TODO(phase 7+): add is_active, owner_id, etc. as the system grows
+"""Department management endpoints."""
 
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from dependencies import get_current_staff
-from models import CourseCreate
-from services.course_service import (
-    CourseAlreadyExistsError,
-    CourseNotFoundError,
+from models import DepartmentCreate
+from services.department_service import (
+    DepartmentAlreadyExistsError,
+    DepartmentNotFoundError,
     RegistrantNotFoundError,
     service,
 )
@@ -22,77 +18,75 @@ from services.staff_auth import StaffPublic
 router = APIRouter(tags=["departments"])
 
 
-@router.post("/courses", status_code=201)
-async def create_course(
-    payload: CourseCreate,
+@router.post("/departments", status_code=201)
+async def create_department(
+    payload: DepartmentCreate,
     staff: StaffPublic = Depends(get_current_staff),
 ):
     try:
-        course = service.create_course(
+        department = service.create_department(
             code=payload.code.strip().upper(),
             name=payload.name.strip(),
-            description=payload.description.strip(),
             duration=payload.duration.strip(),
         )
-        return {"message": "Department created", "course": course}
-    except CourseAlreadyExistsError as exc:
+        return {"message": "Department created", "department": department}
+    except DepartmentAlreadyExistsError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
 
-@router.get("/courses")
-async def get_courses():
-    courses = service.list_courses()
+@router.get("/departments")
+async def get_departments():
+    departments = service.list_departments()
     return {
-        "courses": [
+        "departments": [
             {
-                "name": course.get("name") or course.get("course_name") or "",
-                "code": course.get("code") or course.get("course_code") or "",
-                "description": course.get("description", ""),
-                "duration": course.get("duration", ""),
+                "name": dept.get("name", ""),
+                "code": dept.get("code", ""),
+                "duration": dept.get("duration", ""),
             }
-            for course in courses
+            for dept in departments
         ]
     }
 
 
-@router.get("/courses/{course_code}/registrants")
-async def get_course_registrants(
-    course_code: str,
+@router.get("/departments/{department_code}/registrants")
+async def get_department_registrants(
+    department_code: str,
     staff: StaffPublic = Depends(get_current_staff),
 ):
     try:
         return {
-            "code": course_code,
-            "registrants": service.get_registrants(course_code),
+            "code": department_code,
+            "registrants": service.get_registrants(department_code),
         }
-    except CourseNotFoundError as exc:
+    except DepartmentNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
 
-@router.get("/courses/{course_code}/registrants/{registrant_id}")
-async def get_course_registrant(
-    course_code: str,
+@router.get("/departments/{department_code}/registrants/{registrant_id}")
+async def get_department_registrant(
+    department_code: str,
     registrant_id: str,
     staff: StaffPublic = Depends(get_current_staff),
 ):
     try:
         return {
-            "code": course_code,
-            "registrant": service.get_registrant(course_code, registrant_id),
+            "code": department_code,
+            "registrant": service.get_registrant(department_code, registrant_id),
         }
-    except CourseNotFoundError as exc:
+    except DepartmentNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except RegistrantNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
 
-@router.delete("/courses/{course_code}", status_code=200)
-async def delete_course(
-    course_code: str,
+@router.delete("/departments/{department_code}", status_code=200)
+async def delete_department(
+    department_code: str,
     staff: StaffPublic = Depends(get_current_staff),
 ):
     try:
-        service.delete_course(course_code)
+        service.delete_department(department_code)
         return {"message": "Department deleted"}
-    except CourseNotFoundError as exc:
+    except DepartmentNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
