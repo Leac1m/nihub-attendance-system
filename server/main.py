@@ -44,6 +44,7 @@ from routers import (  # noqa: E402, F401
     internal,
     registrants,
 )
+from services.proxy_log_tailer import ProxyLogTailer  # noqa: E402
 
 logger = logging.getLogger("nihub.main")
 
@@ -51,12 +52,16 @@ logger = logging.getLogger("nihub.main")
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     configure_logging()
-    Path(__file__).parent.joinpath("logs").mkdir(parents=True, exist_ok=True)
+    server_log_dir = Path(__file__).parent / "logs"
+    server_log_dir.mkdir(parents=True, exist_ok=True)
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    tailer = ProxyLogTailer(log_dir=server_log_dir / "proxy")
+    await tailer.start()
     logger.info("server.startup", extra={"app": "nihub-attendance"})
     try:
         yield
     finally:
+        await tailer.stop()
         logger.info("server.shutdown")
 
 
