@@ -1,12 +1,14 @@
 import './brand.css';
-import './App.css';
-import { AttendeeForm } from './AttendeeForm';
+import './styles/pages.css';
+import { RouterProvider } from 'react-router-dom';
+import { AuthProvider } from './auth/AuthContext';
+import { router } from './router';
 
 function App() {
   return (
-    <main className="app">
-      <AttendeeForm />
-    </main>
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   );
 }
 
