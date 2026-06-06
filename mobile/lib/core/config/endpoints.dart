@@ -1,14 +1,22 @@
 class Endpoints {
+  // Auth
   static const login = '/auth/login';
+  static const refresh = '/auth/refresh';
+  static const logout = '/auth/logout';
   static const register = '/auth/register';
   static const verifyAccount = '/auth/verify-account';
-  static const courses = '/courses';
-  static String course(String code) => '/courses/$code';
-  static String courseRegistrants(String code) => '/courses/$code/registrants';
-  static String courseRegistrant(String code, String id) => '/courses/$code/registrants/$id';
-  static String courseRegister(String code) => '/courses/$code/register';
-  static String courseAttendance(String code) => '/courses/$code/attendance';
-  static String courseAttendanceById(String code) => '/courses/$code/attendance';
-  static String courseAttendanceSpreadsheet(String code) =>
-      '/courses/$code/attendance/spreadsheet';
+  static const registerRegistrant = '/auth/registrants/register';
+  static const verifyRegistrant = '/auth/registrants/verify';
+  static const loginRegistrant = '/auth/registrants/login';
+
+  // Departments
+  static const departments = '/departments';
+  static String department(String code) => '/departments/$code';
+  static String departmentRegistrants(String code) => '/departments/$code/registrants';
+  static String departmentRegistrant(String code, String id) => '/departments/$code/registrants/$id';
+  static String departmentRegister(String code) => '/departments/$code/register';
+  static String departmentAttendance(String code) => '/departments/$code/attendance';
+  static String departmentAttendanceById(String code) => '/departments/$code/attendance';
+  static String departmentAttendanceSpreadsheet(String code) =>
+      '/departments/$code/attendance/spreadsheet';
 }
