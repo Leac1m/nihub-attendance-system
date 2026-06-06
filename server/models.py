@@ -22,6 +22,28 @@ class AttendanceByIdRecord(BaseModel):
     date: date
 
 
+class CheckInRequest(BaseModel):
+    id: str
+    occurred_at: datetime | None = None
+
+
+class CheckOutRequest(BaseModel):
+    id: str
+    occurred_at: datetime | None = None
+
+
+class SessionResponse(BaseModel):
+    session_id: int
+    registrant_id: str
+    session_type: str
+    occurred_at: datetime
+
+
+class SessionsForDateResponse(BaseModel):
+    date: date
+    sessions: list[SessionResponse]
+
+
 class RegistrantCreate(BaseModel):
     name: str
     email: EmailStr

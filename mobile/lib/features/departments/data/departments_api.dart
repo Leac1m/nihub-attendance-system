@@ -87,6 +87,56 @@ class DepartmentsApi {
     );
   }
 
+  Future<void> checkIn(
+    String code,
+    String registrantId, {
+    DateTime? occurredAt,
+  }) async {
+    final body = <String, dynamic>{'id': registrantId};
+    if (occurredAt != null) {
+      body['occurred_at'] = occurredAt.toIso8601String();
+    }
+    await _client.post(
+      '/departments/$code/check-in',
+      data: body,
+      requiresAuth: true,
+    );
+  }
+
+  Future<void> checkOut(
+    String code,
+    String registrantId, {
+    DateTime? occurredAt,
+  }) async {
+    final body = <String, dynamic>{'id': registrantId};
+    if (occurredAt != null) {
+      body['occurred_at'] = occurredAt.toIso8601String();
+    }
+    await _client.post(
+      '/departments/$code/check-out',
+      data: body,
+      requiresAuth: true,
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getSessionsForDate(
+    String code,
+    DateTime date,
+  ) async {
+    final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final res = await _client.get(
+      '/departments/$code/attendance/sessions?date=$dateStr',
+      requiresAuth: true,
+    );
+    final dynamic data = res.data;
+    if (data is Map && data['sessions'] != null) {
+      return List<Map<String, dynamic>>.from(
+        (data['sessions'] as List).map((e) => Map<String, dynamic>.from(e)),
+      );
+    }
+    return [];
+  }
+
   Future<Registrant> getRegistrant(String code, String id) async {
     final res = await _client.get(
       Endpoints.departmentRegistrant(code, id),
