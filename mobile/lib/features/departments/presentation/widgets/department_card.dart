@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/department_model.dart';
+import '../../../admin/role_gate.dart';
 
-class DepartmentCard extends StatelessWidget {
+class DepartmentCard extends ConsumerWidget {
   final DepartmentModel department;
   final int index;
   final VoidCallback onTap;
@@ -22,7 +25,7 @@ class DepartmentCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardBg,
@@ -135,6 +138,9 @@ class DepartmentCard extends StatelessWidget {
                           case 'delete':
                             onDelete();
                             break;
+                          case 'edit':
+                            context.push('/departments/${department.code}/edit');
+                            break;
                         }
                       },
                       itemBuilder: (context) => [
@@ -150,6 +156,19 @@ class DepartmentCard extends StatelessWidget {
                             ],
                           ),
                         ),
+                        if (isAdmin(ref))
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.edit,
+                                    size: 20, color: AppColors.primaryDeep),
+                                const SizedBox(width: 8),
+                                Text('Edit',
+                                    style: GoogleFonts.inter(fontSize: 14)),
+                              ],
+                            ),
+                          ),
                         PopupMenuItem(
                           value: 'download',
                           child: Row(

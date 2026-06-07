@@ -19,4 +19,18 @@ class Endpoints {
   static String departmentAttendanceById(String code) => '/departments/$code/attendance';
   static String departmentAttendanceSpreadsheet(String code) =>
       '/departments/$code/attendance/spreadsheet';
+
+  // Admin registrant management
+  static const String registrantUpdateAdmin = '/admin/departments/{code}/registrants/{id}';
+  static const String registrantDeleteAdmin = '/admin/departments/{code}/registrants/{id}';
+  static const String registrantManualAttendance = '/admin/departments/{code}/registrants/{id}/attendance';
+  static const String registrantResendQr = '/admin/departments/{code}/registrants/{id}/resend-qr';
+  static const String registrantQrPng = '/admin/departments/{code}/registrants/{id}/qr.png';
+  // Admin staff
+  static const String adminStaffApprove = '/admin/staff/{username}/approve';
+  static const String adminStaffPending = '/admin/staff/pending';
+  // Admin whoami
+  static const String adminWhoami = '/admin/whoami';
+  // Department management
+  static const String departmentUpdate = '/departments/{code}';
 }

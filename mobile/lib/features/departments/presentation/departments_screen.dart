@@ -72,6 +72,11 @@ class _DepartmentsScreenState extends ConsumerState<DepartmentsScreen> {
                     ),
                     const Spacer(),
                     IconButton(
+                      icon: const Icon(Icons.person,
+                          color: AppColors.textSecondary, size: 26),
+                      onPressed: () => context.push('/admin/profile'),
+                    ),
+                    IconButton(
                       icon: const Icon(Icons.logout,
                           color: AppColors.textSecondary, size: 26),
                       onPressed: () async {

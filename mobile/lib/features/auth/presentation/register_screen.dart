@@ -21,6 +21,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+  bool _requestAdmin = false;
 
   @override
   void dispose() {
@@ -38,6 +39,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             _emailController.text.trim(),
             _usernameController.text.trim(),
             _passwordController.text,
+            requestedAdmin: _requestAdmin,
           );
       if (mounted) {
         context.go('/verify-account', extra: _usernameController.text.trim());
@@ -190,6 +192,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             },
                           ),
                           const SizedBox(height: AppSpacing.xl),
+                          SwitchListTile(
+                            title: Text(
+                              'Request admin role',
+                              style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              'An existing admin will review your request.',
+                              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                            value: _requestAdmin,
+                            onChanged: (v) => setState(() => _requestAdmin = v),
+                            activeColor: AppColors.primary,
+                            contentPadding: EdgeInsets.zero,
+                          ),
                           // Register button
                           Container(
                             height: AppSpacing.buttonHeight,

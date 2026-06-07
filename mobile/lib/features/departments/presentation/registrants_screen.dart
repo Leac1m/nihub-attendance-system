@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../admin/role_gate.dart';
 import '../domain/department_model.dart';
 import 'departments_provider.dart';
 import 'widgets/registrant_list_tile.dart';
@@ -49,14 +50,11 @@ class _RegistrantsScreenState extends ConsumerState<RegistrantsScreen> {
       if (mounted) {
         setState(() {
           _todayStatusMap = statusMap;
-
         });
       }
     } catch (_) {
       if (mounted) {
-        setState(() {
-
-        });
+        setState(() {});
       }
     }
   }
@@ -165,6 +163,11 @@ class _RegistrantsScreenState extends ConsumerState<RegistrantsScreen> {
                           todayStatus: status,
                           onAction: (action) =>
                               _handleAction(context, r, action),
+                          isAdmin: isAdmin(ref),
+                          onEdit: () => context.push(
+                            '/departments/${widget.departmentCode}/registrants/${r.id}/edit',
+                          ),
+                          onDelete: () => _deleteRegistrant(r),
                         );
                       },
                     ),
@@ -207,6 +210,14 @@ class _RegistrantsScreenState extends ConsumerState<RegistrantsScreen> {
               ),
             ),
           ],
+        ),
+      ),
+      floatingActionButton: AdminOnly(
+        child: FloatingActionButton(
+          onPressed: () => context.push('/departments/${widget.departmentCode}/registrants/new'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          child: const Icon(Icons.add),
         ),
       ),
     );
@@ -280,9 +291,49 @@ class _RegistrantsScreenState extends ConsumerState<RegistrantsScreen> {
             );
           }
           return;
+        case RegistrantAction.edit:
+          if (context.mounted) {
+            context.push(
+              '/departments/${widget.departmentCode}/registrants/${r.id}/edit',
+            );
+          }
+          return;
+        case RegistrantAction.delete:
+          await _deleteRegistrant(r);
+          return;
       }
       ref.invalidate(registrantsProvider(widget.departmentCode));
       await _loadTodayStatuses();
+    } catch (e) {
+      NotificationService.showError(e);
+    }
+  }
+
+  Future<void> _deleteRegistrant(Registrant r) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete Registrant', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+        content: Text('Are you sure you want to delete ${r.name}? This action cannot be undone.',
+            style: GoogleFonts.inter(fontSize: 14)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Delete', style: GoogleFonts.inter(color: AppColors.error, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(deleteRegistrantProvider.notifier).delete(widget.departmentCode, r.id);
+      NotificationService.showSuccess('${r.name} deleted');
+      ref.invalidate(registrantsProvider(widget.departmentCode));
     } catch (e) {
       NotificationService.showError(e);
     }

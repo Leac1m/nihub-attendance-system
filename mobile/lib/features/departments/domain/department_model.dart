@@ -76,3 +76,19 @@ class AttendanceDay {
     );
   }
 }
+
+class StaffProfile {
+  final String username;
+  final String name;
+  final String email;
+
+  StaffProfile({required this.username, required this.name, required this.email});
+
+  factory StaffProfile.fromJson(Map<String, dynamic> json) {
+    return StaffProfile(
+      username: json['username'] as String,
+      name: json['name'] as String,
+      email: json['email'] as String,
+    );
+  }
+}

@@ -7,11 +7,18 @@ import '../features/auth/presentation/auth_provider.dart';
 import '../features/auth/presentation/signin_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/verify_account_screen.dart';
+import '../features/auth/domain/auth_state.dart';
 import '../features/departments/presentation/departments_screen.dart';
 import '../features/departments/presentation/create_department_screen.dart';
 import '../features/departments/presentation/registrants_screen.dart';
 import '../features/departments/presentation/scan_screen.dart';
 import '../features/departments/presentation/scan_result_screen.dart';
+import '../features/departments/presentation/edit_department_screen.dart';
+import '../features/departments/presentation/create_registrant_screen.dart';
+import '../features/departments/presentation/edit_registrant_screen.dart';
+import '../features/departments/presentation/widgets/attendance_calendar.dart';
+import '../features/departments/presentation/admin_profile_screen.dart';
+import '../features/departments/presentation/pending_admin_requests_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = ValueNotifier<bool>(ref.read(authStateProvider).isAuthenticated);
@@ -98,6 +105,75 @@ final routerProvider = Provider<GoRouter>((ref) {
           final code = state.pathParameters['departmentCode']!;
           return RegistrantsScreen(departmentCode: code);
         },
+      ),
+      GoRoute(
+        path: '/departments/:departmentCode/edit',
+        builder: (context, state) => Consumer(
+          builder: (context, ref, _) {
+            if (ref.read(authStateProvider).role != AuthRole.admin) {
+              return const DepartmentsScreen();
+            }
+            return EditDepartmentScreen(
+              departmentCode: state.pathParameters['departmentCode']!,
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/departments/:departmentCode/registrants/new',
+        builder: (context, state) => Consumer(
+          builder: (context, ref, _) {
+            if (ref.read(authStateProvider).role != AuthRole.admin) {
+              return const DepartmentsScreen();
+            }
+            return CreateRegistrantScreen(
+              departmentCode: state.pathParameters['departmentCode']!,
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/departments/:departmentCode/registrants/:registrantId/edit',
+        builder: (context, state) => Consumer(
+          builder: (context, ref, _) {
+            if (ref.read(authStateProvider).role != AuthRole.admin) {
+              return const DepartmentsScreen();
+            }
+            return EditRegistrantScreen(
+              departmentCode: state.pathParameters['departmentCode']!,
+              registrantId: state.pathParameters['registrantId']!,
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/departments/:departmentCode/registrants/:registrantId/attendance',
+        builder: (context, state) => Consumer(
+          builder: (context, ref, _) {
+            if (ref.read(authStateProvider).role != AuthRole.admin) {
+              return const DepartmentsScreen();
+            }
+            return AttendanceCalendarScreen(
+              departmentCode: state.pathParameters['departmentCode']!,
+              registrantId: state.pathParameters['registrantId']!,
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/admin/profile',
+        builder: (context, state) => const AdminProfileScreen(),
+      ),
+      GoRoute(
+        path: '/admin/pending-requests',
+        builder: (context, state) => Consumer(
+          builder: (context, ref, _) {
+            if (ref.read(authStateProvider).role != AuthRole.admin) {
+              return const DepartmentsScreen();
+            }
+            return const PendingAdminRequestsScreen();
+          },
+        ),
       ),
     ],
   );

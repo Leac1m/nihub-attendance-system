@@ -20,10 +20,10 @@ class AuthApi {
     return Map<String, dynamic>.from(res.data as Map);
   }
 
-  Future<void> registerStaff(String email, String username, String password) async {
+  Future<void> registerStaff(String email, String username, String password, {bool requestedAdmin = false}) async {
     await _client.post(
       Endpoints.register,
-      data: {'email': email, 'username': username, 'password': password},
+      data: {'email': email, 'username': username, 'password': password, 'requested_admin': requestedAdmin},
     );
   }
 

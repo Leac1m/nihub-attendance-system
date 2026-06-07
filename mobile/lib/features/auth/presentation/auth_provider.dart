@@ -91,10 +91,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> registerStaff(String email, String username, String password) async {
+  Future<void> registerStaff(String email, String username, String password, {bool requestedAdmin = false}) async {
     state = state.copyWith(isLoading: true);
     try {
-      await _api.registerStaff(email, username, password);
+      await _api.registerStaff(email, username, password, requestedAdmin: requestedAdmin);
       state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false);

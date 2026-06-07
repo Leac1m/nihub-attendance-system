@@ -5,18 +5,24 @@ import '../../../../core/theme/app_theme.dart';
 
 enum TodayStatus { checkedIn, checkedOut, notCheckedIn }
 
-enum RegistrantAction { checkIn, checkOut, viewDetails }
+enum RegistrantAction { checkIn, checkOut, viewDetails, edit, delete }
 
 class RegistrantListTile extends StatelessWidget {
   final Registrant registrant;
   final TodayStatus todayStatus;
   final void Function(RegistrantAction action) onAction;
+  final bool isAdmin;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const RegistrantListTile({
     super.key,
     required this.registrant,
     required this.todayStatus,
     required this.onAction,
+    this.isAdmin = false,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -268,6 +274,29 @@ class RegistrantListTile extends StatelessWidget {
                   onAction(RegistrantAction.viewDetails);
                 },
               ),
+              if (isAdmin) ...[
+                const Divider(height: 1),
+                _sheetTile(
+                  context,
+                  icon: Icons.edit,
+                  color: AppColors.primaryDeep,
+                  label: 'Edit registrant',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onAction(RegistrantAction.edit);
+                  },
+                ),
+                _sheetTile(
+                  context,
+                  icon: Icons.delete,
+                  color: AppColors.error,
+                  label: 'Delete registrant',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onAction(RegistrantAction.delete);
+                  },
+                ),
+              ],
               const SizedBox(height: 8),
             ],
           ),

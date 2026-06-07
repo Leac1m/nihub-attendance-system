@@ -62,6 +62,33 @@ class ApiClient {
     );
   }
 
+  Future<Response<T>> put<T>(
+    String path, {
+    dynamic data,
+    bool requiresAuth = false,
+  }) {
+    return _dio.put<T>(
+      path,
+      data: data,
+      options: Options(
+        extra: {'requiresAuth': requiresAuth},
+      ),
+    );
+  }
+
+  Future<Response<List<int>>> getBytes(
+    String path, {
+    bool requiresAuth = false,
+  }) {
+    return _dio.get<List<int>>(
+      path,
+      options: Options(
+        extra: {'requiresAuth': requiresAuth},
+        responseType: ResponseType.bytes,
+      ),
+    );
+  }
+
   Future<Response> download(
     String path,
     String savePath, {

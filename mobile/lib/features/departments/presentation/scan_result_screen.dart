@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/network/error_handler.dart';
 import '../../../core/services/notification_service.dart';
+import '../../admin/role_gate.dart';
 import 'departments_provider.dart';
 import 'widgets/attendee_card.dart';
 
@@ -124,6 +128,44 @@ class _ScanResultScreenState extends ConsumerState<ScanResultScreen> {
                     ),
                     const SizedBox(height: AppSpacing.xxxl),
                     AttendeeCard(attendee: attendee),
+                    const SizedBox(height: AppSpacing.xl),
+                    AdminOnly(
+                      child: Column(
+                        children: [
+                          _buildAdminButton(
+                            'Edit Registrant',
+                            Icons.edit,
+                            AppColors.primaryDeep,
+                            () => context.push(
+                              '/departments/${widget.departmentCode}/registrants/${widget.qrValue}/edit',
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          _buildAdminButton(
+                            'Attendance',
+                            Icons.calendar_month,
+                            AppColors.secondary,
+                            () => context.push(
+                              '/departments/${widget.departmentCode}/registrants/${widget.qrValue}/attendance',
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          _buildAdminButton(
+                            'Resend QR',
+                            Icons.send,
+                            AppColors.primaryLight,
+                            () => _resendQr(),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          _buildAdminButton(
+                            'Download QR',
+                            Icons.download,
+                            AppColors.textMuted,
+                            () => _downloadQr(),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.xxl),
                     if (!_sessionsLoaded)
                       const Center(
@@ -282,6 +324,44 @@ class _ScanResultScreenState extends ConsumerState<ScanResultScreen> {
     );
   }
 
+  Widget _buildAdminButton(
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onPressed,
+  ) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: color.withValues(alpha: 0.08),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 18),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _doCheckIn(String registrantId) async {
     try {
       final api = ref.read(departmentsApiProvider);
@@ -303,6 +383,27 @@ class _ScanResultScreenState extends ConsumerState<ScanResultScreen> {
       if (mounted) {
         context.pop();
       }
+    } catch (e) {
+      NotificationService.showError(e);
+    }
+  }
+
+  Future<void> _resendQr() async {
+    try {
+      await ref.read(resendQrProvider.notifier).resend(widget.departmentCode, widget.qrValue);
+      NotificationService.showSuccess('QR code resent');
+    } catch (e) {
+      NotificationService.showError(e);
+    }
+  }
+
+  Future<void> _downloadQr() async {
+    try {
+      final bytes = await ref.read(downloadQrProvider.notifier).download(widget.departmentCode, widget.qrValue);
+      final directory = await getTemporaryDirectory();
+      final path = '${directory.path}/qr_${widget.qrValue}.png';
+      await File(path).writeAsBytes(bytes);
+      await Share.shareXFiles([XFile(path)], text: 'QR Code for ${widget.qrValue}');
     } catch (e) {
       NotificationService.showError(e);
     }

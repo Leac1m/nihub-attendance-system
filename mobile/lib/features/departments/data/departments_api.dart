@@ -1,3 +1,7 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
+
 import '../../../core/config/api_config.dart';
 import '../../../core/config/endpoints.dart';
 import '../../../core/network/api_client.dart';
@@ -159,5 +163,92 @@ class DepartmentsApi {
       requiresAuth: true,
     );
     return savePath;
+  }
+
+  Future<DepartmentModel> updateDepartment(String code, {String? name, String? duration}) async {
+    final String endpoint = Endpoints.departmentUpdate;
+    final String uri = endpoint.replaceAll('{code}', code);
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    if (duration != null) body['duration'] = duration;
+    final resp = await _client.put(uri, data: body, requiresAuth: true);
+    return DepartmentModel.fromJson(resp.data);
+  }
+
+  Future<Registrant> updateRegistrant(String code, String id, {String? name, String? email, String? phone}) async {
+    final String endpoint = Endpoints.registrantUpdateAdmin;
+    final String uri = endpoint.replaceAll('{code}', code).replaceAll('{id}', id);
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    if (email != null) body['email'] = email;
+    if (phone != null) body['phone'] = phone;
+    final resp = await _client.put(uri, data: body, requiresAuth: true);
+    return Registrant.fromJson(resp.data['registrant']);
+  }
+
+  Future<void> deleteRegistrant(String code, String id) async {
+    final String endpoint = Endpoints.registrantDeleteAdmin;
+    final String uri = endpoint.replaceAll('{code}', code).replaceAll('{id}', id);
+    await _client.delete(uri, requiresAuth: true);
+  }
+
+  Future<Registrant> createRegistrantWithPhoto(
+    String code, {
+    required String name,
+    required String email,
+    String? phone,
+    required String matriculationNumber,
+    String? imageFilePath,
+  }) async {
+    final uri = '/admin/departments/$code/registrants';
+    final formData = FormData.fromMap({
+      'name': name,
+      'email': email,
+      'phone': phone ?? '',
+      'matriculation_number': matriculationNumber,
+      if (imageFilePath != null)
+        'image': await MultipartFile.fromFile(imageFilePath, filename: 'photo.jpg'),
+    });
+    final resp = await _client.post(uri, data: formData, requiresAuth: true);
+    return Registrant.fromJson(resp.data['registrant']);
+  }
+
+  Future<void> setManualAttendance(String code, String id, DateTime date, int status) async {
+    final String endpoint = Endpoints.registrantManualAttendance;
+    final String uri = endpoint.replaceAll('{code}', code).replaceAll('{id}', id);
+    final dateStr = '${date.year}-${date.month.toString().padLeft(2,'0')}-${date.day.toString().padLeft(2,'0')}';
+    await _client.put(uri, data: {'date': dateStr, 'status': status}, requiresAuth: true);
+  }
+
+  Future<bool> resendQr(String code, String id) async {
+    final String endpoint = Endpoints.registrantResendQr;
+    final String uri = endpoint.replaceAll('{code}', code).replaceAll('{id}', id);
+    final resp = await _client.post(uri, requiresAuth: true);
+    return resp.data['sent'] == true;
+  }
+
+  Future<Uint8List> downloadQrPng(String code, String id) async {
+    final String endpoint = Endpoints.registrantQrPng;
+    final String uri = endpoint.replaceAll('{code}', code).replaceAll('{id}', id);
+    final resp = await _client.getBytes(uri, requiresAuth: true);
+    final List<int>? data = resp.data;
+    return Uint8List.fromList(data ?? []);
+  }
+
+  Future<StaffProfile> whoami() async {
+    final resp = await _client.get(Endpoints.adminWhoami, requiresAuth: true);
+    return StaffProfile.fromJson(resp.data);
+  }
+
+  Future<StaffProfile> approveStaffAdmin(String username) async {
+    final String endpoint = Endpoints.adminStaffApprove;
+    final String uri = endpoint.replaceAll('{username}', username);
+    final resp = await _client.post(uri, requiresAuth: true);
+    return StaffProfile.fromJson(resp.data);
+  }
+
+  Future<List<StaffProfile>> listPendingAdminRequests() async {
+    final resp = await _client.get(Endpoints.adminStaffPending, requiresAuth: true);
+    return (resp.data as List).map((e) => StaffProfile.fromJson(e)).toList();
   }
 }
