@@ -24,10 +24,9 @@
     @health path /health /health/*
 
     handle @api {
+        uri strip_prefix /api
         reverse_proxy nihub-server:8000 {
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
             transport http {
                 dial_timeout 5s
                 response_header_timeout 30s
@@ -36,26 +35,23 @@
     }
 
     handle @uploads {
+        uri strip_prefix /uploads
         reverse_proxy nihub-server:8000 {
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
         }
     }
 
     handle @clientlogs {
+        uri strip_prefix /_client-logs
         reverse_proxy nihub-server:8000 {
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
         }
     }
 
     handle @health {
+        uri strip_prefix /health
         reverse_proxy nihub-server:8000 {
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
         }
     }
 

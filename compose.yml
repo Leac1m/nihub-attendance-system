@@ -60,8 +60,6 @@ services:
     image: docker.io/caddy:2-alpine
     container_name: nihub-proxy
     restart: unless-stopped
-    ports:
-      - "80:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - proxy_logs:/var/log/caddy

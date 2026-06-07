@@ -84,7 +84,12 @@ def _login_response(
 async def login(form_data: OAuth2PasswordRequestForm = Depends()) -> LoginResponse:
     try:
         staff = auth_service.authenticate(form_data.username, form_data.password)
-        access_token = auth_service.create_access_token(subject=staff["username"])
+        access_token = auth_service.create_access_token(
+            subject=staff["username"],
+            is_admin=staff.get("is_admin", False),
+            name=staff.get("name", staff["username"]),
+            email=staff.get("email", ""),
+        )
         refresh_token, refresh_expires_at = auth_service.create_refresh_token(
             subject_type="staff", subject_id=staff["username"],
         )
@@ -137,7 +142,12 @@ async def register_staff(payload: StaffRegisterRequest) -> StaffRegisterResponse
 async def verify_staff_account(payload: StaffVerifyRequest) -> LoginResponse:
     try:
         staff = auth_service.verify_staff_account(payload.username, payload.pin)
-        access_token = auth_service.create_access_token(subject=staff["username"])
+        access_token = auth_service.create_access_token(
+            subject=staff["username"],
+            is_admin=staff.get("is_admin", False),
+            name=staff.get("name", staff["username"]),
+            email=staff.get("email", ""),
+        )
         refresh_token, refresh_expires_at = auth_service.create_refresh_token(
             subject_type="staff", subject_id=staff["username"],
         )
