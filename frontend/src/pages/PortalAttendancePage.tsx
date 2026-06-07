@@ -75,7 +75,7 @@ export function PortalAttendancePage() {
             {days.map((day) => (
               <tr key={day.date}>
                 <td>{day.date}</td>
-                <td>{day.present ? 'Present' : 'Absent'}</td>
+                <td>{day.status === 2 ? 'Present' : day.status === 1 ? 'Partial' : 'Absent'}</td>
               </tr>
             ))}
           </tbody>

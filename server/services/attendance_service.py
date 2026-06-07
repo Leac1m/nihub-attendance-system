@@ -265,6 +265,24 @@ class AttendanceService:
                     return "not_checked_in"
                 return "checked_in" if last["session_type"] == "in" else "checked_out"
 
+    def set_manual_status(
+        self, department_code: str, registrant_id: str, date_str: str, status_int: int
+    ) -> None:
+        status_map = {0: "absent", 1: "partial", 2: "present"}
+        derived_status = status_map[status_int]
+        with self._get_connection() as conn:
+            with conn.cursor() as cur:
+                self._verify_department(cur, department_code)
+                self._verify_registrant_in_department(cur, registrant_id, department_code)
+                cur.execute(
+                    """INSERT INTO attendance (registrant_id, date, derived_status)
+                       VALUES (%s, %s, %s)
+                       ON CONFLICT (registrant_id, date)
+                       DO UPDATE SET derived_status = %s""",
+                    (registrant_id, date_str, derived_status, derived_status),
+                )
+                conn.commit()
+
     def get_attendance_spreadsheet(
         self, department_code: str
     ) -> list[dict[str, Any]]:

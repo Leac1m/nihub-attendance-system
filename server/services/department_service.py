@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import os
+import logging
 from datetime import date
 from typing import Any
 from uuid import uuid4
@@ -9,6 +10,9 @@ from uuid import uuid4
 import qrcode
 
 from db import UPLOAD_DIR, get_connection
+from services.email_service import email_service
+
+logger = logging.getLogger(__name__)
 
 
 class DepartmentNotFoundError(Exception):
@@ -57,7 +61,7 @@ class DepartmentService:
             with conn.cursor() as cur:
                 cur.execute(
                     "SELECT id, name, email, phone, matriculation_number, image_url "
-                    "FROM registrants WHERE department_code = %s",
+                    "FROM registrants WHERE department_code = %s AND deleted_at IS NULL",
                     (department_code,),
                 )
                 return [dict(row) for row in cur.fetchall()]
@@ -68,7 +72,7 @@ class DepartmentService:
                 cur.execute(
                     "SELECT id, name, email, phone, matriculation_number, image_url "
                     "FROM registrants "
-                    "WHERE department_code = %s AND (id = %s OR matriculation_number = %s)",
+                    "WHERE department_code = %s AND (id = %s OR matriculation_number = %s) AND deleted_at IS NULL",
                     (department_code, registrant_id, registrant_id),
                 )
                 row = cur.fetchone()
@@ -77,10 +81,14 @@ class DepartmentService:
 
                 registrant = dict(row)
                 cur.execute(
-                    "SELECT date, present FROM attendance WHERE registrant_id = %s ORDER BY date",
+                    "SELECT date, derived_status FROM attendance WHERE registrant_id = %s ORDER BY date DESC",
                     (registrant["id"],),
                 )
-                registrant["attendance_days"] = [dict(r) for r in cur.fetchall()]
+                status_map = {"absent": 0, "partial": 1, "present": 2}
+                registrant["attendance_days"] = [
+                    {"date": r["date"], "status": status_map.get(r["derived_status"], 0)}
+                    for r in cur.fetchall()
+                ]
                 return registrant
 
     def register(self, department_code: str, registrant: dict[str, Any]) -> dict[str, Any]:
@@ -121,6 +129,56 @@ class DepartmentService:
             "attendance_days": [],
         }
 
+    def update_registrant(
+        self, department_code: str, registrant_id: str, fields: dict[str, Any]
+    ) -> dict[str, Any]:
+        with self._get_connection() as conn:
+            with conn.cursor() as cur:
+                self._verify_department(cur, department_code)
+                cur.execute(
+                    "SELECT id FROM registrants WHERE id = %s AND department_code = %s AND deleted_at IS NULL",
+                    (registrant_id, department_code),
+                )
+                if not cur.fetchone():
+                    raise RegistrantNotFoundError("Registrant not found")
+                cur.execute(
+                    """UPDATE registrants
+                       SET name = %s, email = %s, phone = %s
+                       WHERE id = %s AND department_code = %s AND deleted_at IS NULL""",
+                    (fields["name"], fields["email"], fields["phone"], registrant_id, department_code),
+                )
+                conn.commit()
+        return self.get_registrant(department_code, registrant_id)
+
+    def soft_delete_registrant(self, department_code: str, registrant_id: str) -> None:
+        with self._get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE registrants SET deleted_at = NOW() "
+                    "WHERE id = %s AND department_code = %s AND deleted_at IS NULL",
+                    (registrant_id, department_code),
+                )
+                conn.commit()
+
+    def create_registrant_by_admin(
+        self, department_code: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        registrant = {
+            "name": payload["name"],
+            "email": payload["email"],
+            "phone": payload["phone"],
+            "matriculation_number": payload["matriculation_number"],
+        }
+        result = self.register(department_code, registrant)
+        registrant_id = result["id"]
+        department = self._get_department(department_code)
+        qr_bytes = self._generate_qr_bytes(registrant_id)
+        try:
+            email_service.send_registration_email(result, qr_bytes, department=department)
+        except Exception as e:
+            logger.warning("Failed to send registration email for %s: %s", registrant_id, e)
+        return result
+
     def delete_registrant(self, department_code: str, registrant_id: str) -> None:
         with self._get_connection() as conn:
             with conn.cursor() as cur:
@@ -129,8 +187,6 @@ class DepartmentService:
                     (registrant_id, department_code),
                 )
                 conn.commit()
-
-
 
     def _verify_department(self, cur, department_code: str) -> None:
         cur.execute("SELECT code FROM departments WHERE code = %s", (department_code,))
@@ -172,6 +228,9 @@ class DepartmentService:
         buf = io.BytesIO()
         qrcode.make(registrant_id).save(buf, format="PNG")
         return buf.getvalue()
+
+    def generate_qr_bytes(self, registrant_id: str) -> bytes:
+        return self._generate_qr_bytes(registrant_id)
 
 
 
