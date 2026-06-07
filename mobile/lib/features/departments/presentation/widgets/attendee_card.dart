@@ -26,8 +26,8 @@ class AttendeeCard extends StatelessWidget {
           Text(
             attendee.name,
             style: GoogleFonts.inter(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
             ),
             textAlign: TextAlign.center,
@@ -45,16 +45,23 @@ class AttendeeCard extends StatelessWidget {
           ],
           if (attendee.matricNumber != null &&
               attendee.matricNumber!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              attendee.matricNumber!,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textMuted,
-                letterSpacing: 0.5,
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
-              textAlign: TextAlign.center,
+              child: Text(
+                attendee.matricNumber!,
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryDeep,
+                  letterSpacing: 1.0,
+                ),
+              ),
             ),
           ],
           if (attendee.attendanceDays != null &&
@@ -73,11 +80,11 @@ class AttendeeCard extends StatelessWidget {
     final photoUrl = attendee.photoUrl;
     if (photoUrl != null && photoUrl.isNotEmpty) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(40),
+        borderRadius: BorderRadius.circular(100),
         child: Image.network(
           photoUrl,
-          width: 80,
-          height: 80,
+          width: 200,
+          height: 200,
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => _buildInitials(),
         ),
@@ -89,8 +96,8 @@ class AttendeeCard extends StatelessWidget {
   Widget _buildInitials() {
     final initials = _initials(attendee.name);
     return Container(
-      width: 80,
-      height: 80,
+      width: 200,
+      height: 200,
       decoration: BoxDecoration(
         color: AppColors.primaryLight.withValues(alpha: 0.15),
         shape: BoxShape.circle,
@@ -99,7 +106,7 @@ class AttendeeCard extends StatelessWidget {
       child: Text(
         initials,
         style: GoogleFonts.inter(
-          fontSize: 28,
+          fontSize: 72,
           fontWeight: FontWeight.w800,
           color: AppColors.primaryDeep,
         ),

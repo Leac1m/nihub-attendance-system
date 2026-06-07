@@ -10,7 +10,11 @@ export function Layout() {
     <div className="layout">
       <header className="layout-header">
         <Link to="/" className="layout-brand">
-          <span className="layout-brand-mark">N</span>
+          <img 
+            src="/assets/logo.jpg" 
+            alt="NIHUB" 
+            style={{ height: 32, width: 32, objectFit: 'contain', borderRadius: 6 }} 
+          />
           <span className="layout-brand-text">NIHUB Attendance</span>
         </Link>
 
@@ -28,16 +32,6 @@ export function Layout() {
               </NavLink>
             </>
           ) : null}
-          {currentRole === 'registrant' ? (
-            <>
-              <NavLink to="/portal" end className="layout-nav-link">
-                Profile
-              </NavLink>
-              <NavLink to="/portal/attendance" className="layout-nav-link">
-                Attendance
-              </NavLink>
-            </>
-          ) : null}
         </nav>
 
         <div className="layout-user">
@@ -45,11 +39,6 @@ export function Layout() {
             <span className="layout-user-chip" title={state.user.email}>
               {state.user.name || state.user.username}
               {state.user.isAdmin ? <span className="layout-badge">Admin</span> : null}
-            </span>
-          ) : state.kind === 'registrant' ? (
-            <span className="layout-user-chip" title={state.user.matriculationNumber}>
-              {state.user.matriculationNumber}
-              <span className="layout-badge">{state.user.departmentCode}</span>
             </span>
           ) : null}
           <LogoutButton />

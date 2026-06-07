@@ -122,7 +122,7 @@ class _ScanResultScreenState extends ConsumerState<ScanResultScreen> {
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.xxxl),
                     AttendeeCard(attendee: attendee),
                     const SizedBox(height: AppSpacing.xxl),
                     if (!_sessionsLoaded)
