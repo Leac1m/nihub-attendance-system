@@ -9,7 +9,12 @@ the old staff-only stub.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+import os
+from datetime import datetime
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from dependencies import get_current_admin
@@ -19,6 +24,7 @@ from services.department_service import (
     RegistrantExistsError,
     service as department_service,
 )
+from db import UPLOAD_DIR, get_connection
 from services.attendance_service import service as attendance_service
 from services.staff_auth import StaffPublic
 
@@ -74,12 +80,34 @@ async def admin_delete_registrant(
 @router.post("/departments/{department_code}/registrants")
 async def admin_create_registrant(
     department_code: str,
-    payload: RegistrantCreateRequest,
+    name: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(""),
+    matriculation_number: str = Form(...),
+    image: UploadFile | None = File(None),
     admin: StaffPublic = Depends(get_current_admin),
 ):
     try:
+        image_url = None
+        if image:
+            if image.size and image.size > 5 * 1024 * 1024:
+                raise HTTPException(400, "Image size must be under 5MB")
+            file_extension = Path(image.filename).suffix if image.filename else ".jpg"
+            image_filename = f"registrant_{uuid4().hex}_{int(datetime.now().timestamp())}{file_extension}"
+            file_path = UPLOAD_DIR / image_filename
+            content = await image.read()
+            with open(file_path, "wb") as f:
+                f.write(content)
+            image_url = f"/uploads/{image_filename}"
+
+        payload = {
+            "name": name,
+            "email": email,
+            "phone": phone,
+            "matriculation_number": matriculation_number,
+        }
         created = department_service.create_registrant_by_admin(
-            department_code, payload.model_dump()
+            department_code, payload, image_url=image_url
         )
         return {"registrant": created}
     except RegistrantExistsError:
@@ -138,3 +166,31 @@ async def admin_download_qr(
 @router.get("/whoami", response_model=StaffPublic)
 async def admin_whoami(admin: StaffPublic = Depends(get_current_admin)) -> StaffPublic:
     return admin
+
+
+@router.post("/staff/{username}/approve")
+async def approve_staff_admin(username: str, admin: StaffPublic = Depends(get_current_admin)) -> dict:
+    """Approve a staff member's admin role request. Requires is_admin=true."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE staff SET is_admin = TRUE WHERE username = %s AND is_verified = TRUE RETURNING username, name, email, is_admin",
+                (username,),
+            )
+            row = cur.fetchone()
+            conn.commit()
+            if not row:
+                raise HTTPException(status_code=404, detail="Staff not found or not yet verified")
+            return dict(row)
+
+
+@router.get("/staff/pending", response_model=list[dict])
+async def list_pending_admin_requests(admin: StaffPublic = Depends(get_current_admin)) -> list[dict]:
+    """List staff who have requested admin role and are verified but not yet admins."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT username, name, email FROM staff WHERE is_verified = TRUE AND is_admin = FALSE AND requested_admin = TRUE",
+            )
+            rows = cur.fetchall()
+            return [dict(r) for r in rows]

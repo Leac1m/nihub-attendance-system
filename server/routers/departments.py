@@ -6,7 +6,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 
 from dependencies import get_current_staff
-from models import DepartmentCreate
+from models import DepartmentCreate, DepartmentResponse, DepartmentUpdate
 from services.department_service import (
     DepartmentAlreadyExistsError,
     DepartmentNotFoundError,
@@ -90,3 +90,14 @@ async def delete_department(
         return {"message": "Department deleted"}
     except DepartmentNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.put("/departments/{code}", response_model=DepartmentResponse)
+async def update_department(code: str, payload: DepartmentUpdate, staff: StaffPublic = Depends(get_current_staff)) -> DepartmentResponse:
+    """Update department name and/or duration."""
+    if payload.name is None and payload.duration is None:
+        raise HTTPException(status_code=400, detail="At least one field must be provided")
+    updated = service.update_department(code, payload.name, payload.duration)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Department not found")
+    return updated

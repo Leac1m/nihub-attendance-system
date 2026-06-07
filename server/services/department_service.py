@@ -161,13 +161,14 @@ class DepartmentService:
                 conn.commit()
 
     def create_registrant_by_admin(
-        self, department_code: str, payload: dict[str, Any]
+        self, department_code: str, payload: dict[str, Any], image_url: str | None = None
     ) -> dict[str, Any]:
         registrant = {
             "name": payload["name"],
             "email": payload["email"],
             "phone": payload["phone"],
             "matriculation_number": payload["matriculation_number"],
+            "image_url": image_url,
         }
         result = self.register(department_code, registrant)
         registrant_id = result["id"]
@@ -204,6 +205,23 @@ class DepartmentService:
                 if not row:
                     raise DepartmentNotFoundError("Department not found")
                 return dict(row)
+
+    def update_department(self, code: str, name: str | None, duration: str | None) -> dict | None:
+        with self._get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE departments
+                    SET name = COALESCE(%s, name),
+                        duration = COALESCE(%s, duration)
+                    WHERE code = %s
+                    RETURNING code, name, duration
+                    """,
+                    (name, duration, code),
+                )
+                row = cur.fetchone()
+                conn.commit()
+                return dict(row) if row else None
 
     def delete_department(self, department_code: str) -> None:
         with self._get_connection() as conn:

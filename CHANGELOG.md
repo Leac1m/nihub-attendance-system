@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [Unreleased] — Mobile Admin Parity Backend
+- PUT /departments/{code} to edit department name/duration
+- POST /admin/departments/{code}/registrants now accepts multipart with optional image
+- POST /admin/staff/{username}/approve — grant admin role to verified staff
+- GET /admin/staff/pending — list staff who requested admin role
+- Staff registration accepts `requested_admin` flag; admin email notified of role requests
+
 ## Phase 7 — Branding
 
 _Agent G is currently implementing branding changes in parallel._

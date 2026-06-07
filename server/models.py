@@ -62,6 +62,7 @@ class StaffRegisterRequest(BaseModel):
     email: EmailStr
     username: str
     password: str
+    requested_admin: bool = False
 
 
 class StaffVerifyRequest(BaseModel):
@@ -80,6 +81,17 @@ class DepartmentCreate(BaseModel):
     code: str = Field(..., max_length=20)
     name: str = Field(..., max_length=100)
     duration: str = Field(default="", max_length=50)
+
+
+class DepartmentUpdate(BaseModel):
+    name: str | None = Field(None, max_length=100)
+    duration: str | None = Field(None, max_length=50)
+
+
+class DepartmentResponse(BaseModel):
+    code: str
+    name: str
+    duration: str
 
 
 class RefreshRequest(BaseModel):

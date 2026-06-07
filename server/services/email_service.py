@@ -77,6 +77,7 @@ class EmailService:
         email: str,
         verification_pin: str,
         expires_at: str,
+        requested_admin: bool = False,
     ) -> None:
         if not self.is_configured():
             logger.warning(
@@ -105,6 +106,8 @@ class EmailService:
             f"Verification PIN: {verification_pin}\n"
             f"Expires At: {expires_at}\n"
         )
+        if requested_admin:
+            body_text += "\n⚠️  ADMIN ROLE REQUESTED — review before sharing PIN\n"
 
         content_html = (
             f"<p>A new staff account was created.</p>"
@@ -114,6 +117,8 @@ class EmailService:
             f"<strong>Expires At:</strong> {expires_at}</p>"
             f"<p>Share this code with the staff member so they can verify their account.</p>"
         )
+        if requested_admin:
+            content_html += "<p style='color:red;'><strong>⚠️  ADMIN ROLE REQUESTED — review before sharing PIN</strong></p>"
         html_body = _render_email(
             subject=f"NIHUB staff verification code for {username}",
             content=content_html,

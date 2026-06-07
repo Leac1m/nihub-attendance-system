@@ -89,6 +89,7 @@ class StaffAuthService:
         password: str,
         verification_pin: str,
         verification_pin_expires_at: datetime,
+        requested_admin: bool = False,
     ) -> dict[str, Any]:
         try:
             with get_connection() as conn:
@@ -102,9 +103,10 @@ class StaffAuthService:
                             password,
                             is_verified,
                             verification_pin,
-                            verification_pin_expires_at
+                            verification_pin_expires_at,
+                            requested_admin
                         )
-                        VALUES (%s, %s, %s, %s, FALSE, %s, %s)
+                        VALUES (%s, %s, %s, %s, FALSE, %s, %s, %s)
                         RETURNING
                             username,
                             name,
@@ -112,6 +114,7 @@ class StaffAuthService:
                             password,
                             is_verified,
                             is_admin,
+                            requested_admin,
                             verification_pin,
                             verification_pin_expires_at
                         """,
@@ -122,6 +125,7 @@ class StaffAuthService:
                             password,
                             verification_pin,
                             verification_pin_expires_at,
+                            requested_admin,
                         ),
                     )
                     row = cur.fetchone()

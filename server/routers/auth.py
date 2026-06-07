@@ -112,6 +112,7 @@ async def register_staff(payload: StaffRegisterRequest) -> StaffRegisterResponse
             password=payload.password,
             verification_pin=verification_pin,
             verification_pin_expires_at=verification_expires_at,
+            requested_admin=payload.requested_admin,
         )
 
         try:
@@ -120,6 +121,7 @@ async def register_staff(payload: StaffRegisterRequest) -> StaffRegisterResponse
                 email=staff["email"],
                 verification_pin=verification_pin,
                 expires_at=verification_expires_at.isoformat(),
+                requested_admin=payload.requested_admin,
             )
         except Exception as exc:
             logger.warning(
