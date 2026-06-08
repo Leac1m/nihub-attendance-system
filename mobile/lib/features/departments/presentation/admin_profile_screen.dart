@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../admin/role_gate.dart';
 import 'departments_provider.dart';
 
 class AdminProfileScreen extends ConsumerWidget {
@@ -121,44 +122,46 @@ class AdminProfileScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.cardBg,
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadiusMedium),
-              boxShadow: AppShadows.cardShadow,
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => context.push('/admin/pending-requests'),
+          AdminOnly(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.cardBg,
                 borderRadius: BorderRadius.circular(AppSpacing.cardRadiusMedium),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.cardPadding),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AppColors.secondary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
+                boxShadow: AppShadows.cardShadow,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => context.push('/admin/pending-requests'),
+                  borderRadius: BorderRadius.circular(AppSpacing.cardRadiusMedium),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.secondary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.pending_actions, color: AppColors.secondary, size: 22),
                         ),
-                        child: const Icon(Icons.pending_actions, color: AppColors.secondary, size: 22),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Text(
-                          'Pending Admin Requests',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Text(
+                            'Pending Admin Requests',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                         ),
-                      ),
-                      const Icon(Icons.chevron_right, color: AppColors.textMuted),
-                    ],
+                        const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -1,0 +1,13 @@
+NIHUB
+=====
+
+{subject}
+
+{content}
+
+{cta_text}
+{cta_url}
+{/cta_text}
+
+---
+© 2026 NIHUB. Powered by NIHUB.

@@ -181,18 +181,19 @@ class DepartmentCard extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              const Icon(Icons.delete,
-                                  size: 20, color: AppColors.error),
-                              const SizedBox(width: 8),
-                              Text('Delete',
-                                  style: GoogleFonts.inter(fontSize: 14)),
-                            ],
+                        if (isAdmin(ref))
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.delete,
+                                    size: 20, color: AppColors.error),
+                                const SizedBox(width: 8),
+                                Text('Delete',
+                                    style: GoogleFonts.inter(fontSize: 14)),
+                              ],
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ],

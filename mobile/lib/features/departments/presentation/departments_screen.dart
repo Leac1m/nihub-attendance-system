@@ -9,6 +9,7 @@ import '../../auth/presentation/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/network/error_handler.dart';
 import '../../../core/services/notification_service.dart';
+import '../../admin/role_gate.dart';
 import 'departments_provider.dart';
 import 'widgets/department_card.dart';
 
@@ -44,6 +45,52 @@ class _DepartmentsScreenState extends ConsumerState<DepartmentsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
+      drawer: Drawer(
+        width: 220,
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Text(
+                  'Menu',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              ListTile(
+                leading: const Icon(Icons.person, color: AppColors.textSecondary),
+                title: Text(
+                  'Profile',
+                  style: GoogleFonts.inter(color: AppColors.textPrimary),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/admin/profile');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.logout, color: AppColors.textSecondary),
+                title: Text(
+                  'Logout',
+                  style: GoogleFonts.inter(color: AppColors.textPrimary),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await ref.read(authStateProvider.notifier).signOut();
+                  if (mounted) context.go('/signin');
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -59,7 +106,13 @@ class _DepartmentsScreenState extends ConsumerState<DepartmentsScreen> {
                 decoration: const BoxDecoration(color: AppColors.surface),
                 child: Row(
                   children: [
-                    const SizedBox(width: 48),
+                    Builder(
+                      builder: (ctx) => IconButton(
+                        icon: const Icon(Icons.menu,
+                            color: AppColors.textSecondary, size: 26),
+                        onPressed: () => Scaffold.of(ctx).openDrawer(),
+                      ),
+                    ),
                     const Spacer(),
                     Text(
                       'NIHUB',
@@ -71,19 +124,7 @@ class _DepartmentsScreenState extends ConsumerState<DepartmentsScreen> {
                       ),
                     ),
                     const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.person,
-                          color: AppColors.textSecondary, size: 26),
-                      onPressed: () => context.push('/admin/profile'),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.logout,
-                          color: AppColors.textSecondary, size: 26),
-                      onPressed: () async {
-                        await ref.read(authStateProvider.notifier).signOut();
-                        if (mounted) context.go('/signin');
-                      },
-                    ),
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),
@@ -251,15 +292,17 @@ class _DepartmentsScreenState extends ConsumerState<DepartmentsScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/departments/create'),
-        icon: const Icon(Icons.add),
-        label: Text(
-          'Create Department',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+      floatingActionButton: AdminOnly(
+        child: FloatingActionButton.extended(
+          onPressed: () => context.push('/departments/create'),
+          icon: const Icon(Icons.add),
+          label: Text(
+            'Create Department',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
         ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
       ),
     );
   }

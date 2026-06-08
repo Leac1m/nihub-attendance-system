@@ -142,6 +142,11 @@ class _AuthInterceptor extends Interceptor {
     final alreadyRetried = err.requestOptions.extra['_retried'] == true;
     final isRefreshCall = err.requestOptions.extra['_isRefresh'] == true;
 
+    if (err.response?.statusCode == 403) {
+      AuthEventBus().emit(AuthEvent.forceSignOut);
+      return handler.next(err);
+    }
+
     if (err.response?.statusCode != 401 ||
         !isAuthCall ||
         alreadyRetried ||

@@ -8,17 +8,57 @@ from email.mime.text import MIMEText
 
 logger = logging.getLogger(__name__)
 
-_TPL_PATH = os.path.join(os.path.dirname(__file__), "brand", "email-template.html")
+_EMAIL_TPL = """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{subject}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F8F9FA;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F8F9FA;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
 
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#70008B;border-radius:12px 12px 0 0;padding:28px 32px;" align="left">
+              <span style="font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:-0.5;">NIHUB</span>
+            </td>
+          </tr>
 
-def _load_template() -> str:
-    with open(_TPL_PATH, "r", encoding="utf-8") as f:
-        return f.read()
+          <!-- Card body -->
+          <tr>
+            <td style="background-color:#FFFFFF;padding:36px 32px;">
+              <h1 style="margin:0 0 20px;font-size:22px;font-weight:700;color:#70008B;line-height:1.3;">{subject}</h1>
+              <div style="font-size:15px;color:#191C1D;line-height:1.7;">{content}</div>
+
+              {cta_url}
+              <div style="margin-top:28px;">
+                <a href="{cta_url}" style="display:inline-block;background-color:#70008B;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:600;padding:14px 28px;border-radius:8px;">{cta_text}</a>
+              </div>
+              {/cta_url}
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#F8F9FA;border-radius:0 0 12px 12px;padding:20px 32px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#827282;">© 2026 NIHUB. Powered by NIHUB.</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
 
 
 def _render_email(*, subject: str, content: str, cta_url: str = "", cta_text: str = "") -> str:
-    tpl = _load_template()
-    rendered = tpl.replace("{subject}", subject)
+    rendered = _EMAIL_TPL.replace("{subject}", subject)
     rendered = rendered.replace("{content}", content)
     if cta_url:
         cta_block = (

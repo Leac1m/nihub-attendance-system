@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nihub-password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql:Z
+     # - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql:Z
     networks:
       - nihub-net
     healthcheck:

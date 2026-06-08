@@ -34,16 +34,23 @@ class RegistrantListTile extends StatelessWidget {
         border: Border.all(color: AppColors.borderCard),
         boxShadow: AppShadows.cardShadow,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          children: [
-            _buildAvatar(),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(child: _buildInfo(context)),
-            _buildStatusDot(),
-            _buildTrailing(context),
-          ],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showActionSheet(context),
+          borderRadius: BorderRadius.circular(AppSpacing.cardRadiusMedium),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                _buildAvatar(),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(child: _buildInfo(context)),
+                _buildStatusDot(),
+                _buildTrailing(context),
+              ],
+            ),
+          ),
         ),
       ),
     );

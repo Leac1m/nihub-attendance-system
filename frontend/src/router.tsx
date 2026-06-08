@@ -2,13 +2,13 @@
 import { createBrowserRouter, Outlet } from 'react-router-dom';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { Layout } from './components/Layout';
-import { HomeRedirect } from './pages/HomeRedirect';
 import { RegisterPage } from './pages/RegisterPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { LoginPage } from './pages/LoginPage';
 import { PortalLoginPage } from './pages/PortalLoginPage';
 import { PortalHomePage } from './pages/PortalHomePage';
 import { PortalAttendancePage } from './pages/PortalAttendancePage';
+import { AttendeeForm } from './pages/AttendeeForm';
 import { AdminHomePage } from './pages/admin/AdminHomePage';
 import { DepartmentListPage } from './pages/admin/DepartmentListPage';
 import { DepartmentCreatePage } from './pages/admin/DepartmentCreatePage';
@@ -22,14 +22,14 @@ function NotFound() {
     <div className="page">
       <div className="page-card" style={{ textAlign: 'center' }}>
         <h1 className="page-title">Not found</h1>
-        <p className="page-subtitle">The page you’re looking for doesn’t exist.</p>
+        <p className="page-subtitle">The page you're looking for doesn't exist.</p>
       </div>
     </div>
   );
 }
 
 export const router = createBrowserRouter([
-  { path: '/', element: <HomeRedirect /> },
+  { path: '/', element: <AttendeeForm /> },
   {
     element: <Layout />,
     children: [
