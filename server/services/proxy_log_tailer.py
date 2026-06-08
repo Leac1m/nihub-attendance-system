@@ -118,7 +118,7 @@ async def tail_files(paths: Iterable[Path]) -> AsyncIterator[NetworkFailure]:
             positions[p] = h.tell()
 
     try:
-        async for changes in awatch(*paths, stop_on_none=False):
+        async for changes in awatch(*paths):
             for _change_type, path_str in changes:
                 p = Path(path_str)
                 h = handles.get(p)

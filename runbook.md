@@ -16,6 +16,7 @@ The system consists of the following main components:
 - Docker and Docker Compose installed (for backend infrastructure)
 - Flutter SDK installed (for mobile app development)
 
+Note: Podman can be used as an alternative to Docker. Modern Podman includes a `podman compose` command that is largely compatible with `docker compose`. On some systems the separate `podman-compose` wrapper may be available instead — adjust commands accordingly.
 ## Running the Backend Infrastructure
 
 The backend services are containerized and managed via Docker Compose.
@@ -28,9 +29,14 @@ The backend services are containerized and managed via Docker Compose.
    ```
 
 2. **Start the Services**:
-   From the root of the repository, run:
+   From the root of the repository, run (Docker):
    ```bash
    docker compose up -d --build
+   ```
+
+   Or, if you're using Podman:
+   ```bash
+   podman compose up -d --build
    ```
    This will build and start:
    - `nihub-postgres`: The database instance.
@@ -42,10 +48,14 @@ The backend services are containerized and managed via Docker Compose.
    Check the status of the running containers:
    ```bash
    docker compose ps
+   # or with Podman:
+   podman compose ps
    ```
    You can view logs for a specific service:
    ```bash
    docker compose logs -f nihub-server
+   # or with Podman:
+   podman compose logs -f nihub-server
    ```
 
 ## Database Initialization

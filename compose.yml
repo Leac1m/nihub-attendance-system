@@ -4,10 +4,11 @@ services:
   postgres:
     image: docker.io/postgres:16-alpine
     container_name: nihub-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: nihub
       POSTGRES_USER: nihub
-      POSTGRES_PASSWORD: nihub-password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nihub-password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -24,6 +25,7 @@ services:
       context: ./server
       dockerfile: Containerfile
     container_name: nihub-server
+    restart: unless-stopped
     # No host port mapping — the server is only reachable through
     # the nihub-proxy service below.
     networks:
@@ -32,7 +34,7 @@ services:
       - ./server/.env
     environment:
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me}
-      - DATABASE_URL=postgresql://nihub:nihub-password@postgres:5432/nihub
+      - DATABASE_URL=postgresql://nihub:${POSTGRES_PASSWORD:-nihub-password}@postgres:5432/nihub
     depends_on:
       postgres:
         condition: service_healthy
@@ -49,6 +51,7 @@ services:
       context: ./frontend
       dockerfile: Containerfile
     container_name: nihub-frontend
+    restart: unless-stopped
     # No host port mapping — the frontend is only reachable through
     # the nihub-proxy service below.
     networks:
@@ -60,6 +63,9 @@ services:
     image: docker.io/caddy:2-alpine
     container_name: nihub-proxy
     restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - proxy_logs:/var/log/caddy
