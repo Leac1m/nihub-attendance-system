@@ -117,14 +117,23 @@ async def tail_files(paths: Iterable[Path]) -> AsyncIterator[NetworkFailure]:
             handles[p] = h
             positions[p] = h.tell()
 
+    watch_paths = [p for p in paths if p.exists()]
+    if not watch_paths:
+        paths = list(paths)
+        paths[0].parent.mkdir(parents=True, exist_ok=True)
+        await asyncio.sleep(2)
+        watch_paths = [p for p in paths if p.exists()]
+
+    if not watch_paths:
+        logger.error("no proxy log files found, proxy tailer disabled")
+        return
+
     try:
-        async for changes in awatch(*paths):
+        async for changes in awatch(*watch_paths):
             for _change_type, path_str in changes:
                 p = Path(path_str)
                 h = handles.get(p)
                 if h is None:
-                    # File may have been created after we started.  Open
-                    # it lazily so we start tailing on the next change.
                     if p.exists():
                         h = open(p, "r", encoding="utf-8", errors="replace")
                         h.seek(0, 2)

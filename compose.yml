@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nihub-password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./server/init.sql:/docker-entrypoint-initdb.d/init.sql:Z
     networks:
       - nihub-net
     healthcheck:
@@ -67,7 +67,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:Z
       - proxy_logs:/var/log/caddy
     networks:
       - nihub-net
