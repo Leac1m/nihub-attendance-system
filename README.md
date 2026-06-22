@@ -25,7 +25,7 @@ graph TB
     Web --> Caddy
     Mobile --> Caddy
     Caddy --> |/api/*| API
-    Caddy --> |/* (SPA)| Web
+    Caddy --> |"/* (SPA)"| Web
     API --> Routers
     Routers --> Services
     Services --> DB
